@@ -1,0 +1,6 @@
+{
+  "name": "Cactus Bear",
+  "description": "Premium industrial streetwear e-commerce and editorial showroom.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default catch-all deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper: Auth check
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: Is the user the specific bootstrapped admin
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "chibundusadiq@gmail.com" || 
+        (request.auth.token.email_verified == true && request.auth.token.email == "chibundusadiq@gmail.com")
+      );
+    }
+
+    // Helper: Is document owner
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Helpers to validate IDs
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    // Collection: Products
+    match /products/{productId} {
+      allow read: if true; // Public catalog viewable by anyone
+      allow write: if isAdmin();
+    }
+
+    // Collection: Orders
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+  }
+}
