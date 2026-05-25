@@ -151,11 +151,11 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         {/* Hover quick details slide */}
         <div className="absolute inset-x-0 bottom-0 bg-black/85 backdrop-blur-sm p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex justify-between items-center">
           <span className="font-mono text-[9px] text-[#EFFF00]">
-            VIEW DETAILED SPECIFICATIONS
+            VIEW PRODUCT DETAILS
           </span>
           <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-400">
             <Eye size={11} />
-            SPECIFICATIONS
+            DETAILS
           </div>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           
           {/* Colors row */}
           <div className="flex gap-2 items-center">
-            <span className="text-[9px] font-mono text-zinc-600 uppercase">COLOR BASE</span>
+            <span className="text-[9px] font-mono text-zinc-500 uppercase">COLOR</span>
             <div className="flex gap-1.5">
               {product.colors.map((color) => {
                 const isCSelected = selectedColor.name === color.name;
@@ -202,7 +202,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           {/* Sizing choosing row */}
           <div className="flex justify-between items-center">
             <div className="flex gap-1 items-center">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">SIZE SELECTION</span>
+              <span className="text-[9px] font-mono text-zinc-500 uppercase">SIZE</span>
               <div className="flex gap-1">
                 {product.sizes.map((sz) => {
                   const isSSelected = selectedSize === sz;
@@ -213,7 +213,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                       className={`px-1.5 py-0.5 font-mono text-[9px] border ${
                         isSSelected
                           ? "bg-white text-black border-white font-bold"
-                          : "border-zinc-900 text-zinc-500 hover:border-zinc-650"
+                          : "border-zinc-900 text-zinc-500 hover:border-zinc-500"
                       }`}
                     >
                       {sz}
@@ -232,7 +232,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                   ? "bg-[#EFFF00] text-black"
                   : "bg-zinc-900 border border-zinc-800 text-white hover:border-[#EFFF00] hover:text-[#EFFF00]"
               }`}
-              title="Add to Vault Cart"
+              title="Add to Bag"
             >
               {added ? <Check size={14} className="animate-bounce" /> : <Plus size={14} />}
             </button>
@@ -252,7 +252,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           >
             <div>
               <div className="flex justify-between items-center mb-4 pb-2 border-b border-zinc-900">
-                <span className="font-mono text-[#EFFF00] text-[10px] tracking-widest">PRODUCT SPECIFICATIONS</span>
+                <span className="font-mono text-[#EFFF00] text-[10px] tracking-widest">PRODUCT DETAILS</span>
                 <button
                   onClick={() => setDetailedPanel(false)}
                   className="text-zinc-500 hover:text-white font-mono text-[9px] tracking-widest cursor-pointer"
@@ -261,7 +261,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                 </button>
               </div>
 
-              <h4 className="text-sm font-sans font-black text-white mb-2">{product.name} specs</h4>
+              <h4 className="text-sm font-sans font-black text-white mb-2">{product.name} Details</h4>
               <ul className="flex flex-col gap-2">
                 {product.details.map((det, i) => (
                   <li key={i} className="font-mono text-[10px] text-zinc-450 flex items-start gap-2 line-clamp-1">
@@ -272,7 +272,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               </ul>
 
               <div className="mt-6 bg-zinc-950 p-3 border border-zinc-900 mt-4 rounded-none">
-                <span className="text-zinc-655 font-mono text-[9px] uppercase block mb-1">SKU IDENTIFIER</span>
+                <span className="text-zinc-500 font-mono text-[9px] uppercase block mb-1">SKU IDENTIFIER</span>
                 <code className="text-[#EFFF00] font-mono text-[10px]">{product.sku}</code>
               </div>
             </div>

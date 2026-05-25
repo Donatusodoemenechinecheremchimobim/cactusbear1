@@ -36,7 +36,15 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCat | "All">("All");
   
   // Upcoming Drop Countdown states
-  const [timerConfig, setTimerConfig] = useState<DropTimerConfig>(() => dbService.getTimerConfig());
+  const [timerConfig, setTimerConfig] = useState<DropTimerConfig>({
+    id: "active-drop-config",
+    heading: "SÉRIE INCOMING // JULY SPECIALIST",
+    subheading: "THE SAGE THORN DOUBLE-PLEAT PARACHUTE CARGOS",
+    targetDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
+    description: "Premium heavy-dyed dual structured ripstop pants featuring our signature crown detailing.",
+    isActivated: true,
+    notifyEmails: []
+  });
   const [alertFormEmail, setAlertFormEmail] = useState<string>("");
   const [alertSubscribed, setAlertSubscribed] = useState<boolean>(false);
   const [alertError, setAlertError] = useState<string>("");
@@ -48,9 +56,15 @@ export default function App() {
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
   const [productsList, setProductsList] = useState<any[]>([]);
 
-  const refreshDynamicProducts = () => {
-    setProductsList(dbService.getProducts());
-    setTimerConfig(dbService.getTimerConfig());
+  const refreshDynamicProducts = async () => {
+    try {
+      const pList = await dbService.getProducts();
+      setProductsList(pList);
+      const tConf = await dbService.getTimerConfig();
+      setTimerConfig(tConf);
+    } catch (e) {
+      console.error("Failed to load products/timer:", e);
+    }
   };
 
   // Time calculation mechanics for live drop countdown timer
@@ -146,24 +160,26 @@ export default function App() {
   };
 
   // Subscribe to upcoming drops
-  const handleAlertSignup = (e: React.FormEvent) => {
+  const handleAlertSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!alertFormEmail.trim()) return;
     setAlertSubmitting(true);
     setAlertError("");
 
-    setTimeout(() => {
-      const isNew = dbService.subscribeToDrop(alertFormEmail);
+    try {
+      const isNew = await dbService.subscribeToDrop(alertFormEmail);
       if (isNew) {
         setAlertSubscribed(true);
         setAlertFormEmail("");
-        // Load the new config from local cache to verify
-        refreshDynamicProducts();
+        await refreshDynamicProducts();
       } else {
         setAlertError("Patron verification: You are already subscribed to the upcoming release!");
       }
+    } catch (err) {
+      setAlertError("Database connection timed out. Please try again.");
+    } finally {
       setAlertSubmitting(false);
-    }, 1000);
+    }
   };
 
   // Filter Catalog Presets
@@ -462,7 +478,7 @@ export default function App() {
               <div className="lg:col-span-7 flex flex-col gap-6">
                 <div>
                   <span className="text-[#EFFF00] font-mono text-xs tracking-widest block font-black uppercase mb-1">
-                    ✦ ATELIER STATUS // IMPENDING RELEASE
+                    ✦ UPCOMING COLLECTION DROP
                   </span>
                   <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase text-white">
                     {timerConfig.heading}
@@ -513,17 +529,17 @@ export default function App() {
                 <div className="flex items-center gap-3 font-mono text-[9px] text-zinc-600 mt-2">
                   <span className="flex items-center gap-1.5 uppercase">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-ping" />
-                    LIVE COUTURE BROADCAST
+                    LIVE COUNTDOWN
                   </span>
                   <span>|</span>
-                  <span>TARGET CALENDAR: {new Date(timerConfig.targetDate).toLocaleDateString()} {new Date(timerConfig.targetDate).toLocaleTimeString()}</span>
+                  <span>RELEASE TIME: {new Date(timerConfig.targetDate).toLocaleDateString()} {new Date(timerConfig.targetDate).toLocaleTimeString()}</span>
                 </div>
               </div>
 
               {/* Right Column: Alert Registry Form */}
               <div className="lg:col-span-5 bg-[#0b0b0c] border border-zinc-900 p-8 flex flex-col justify-between relative min-h-[380px]">
                 <div className="absolute top-0 right-0 p-4 font-mono text-[9px] text-zinc-700 tracking-widest">
-                  PORTAL: COUNTDOWN_LIVE
+                  NOTIFICATIONS
                 </div>
 
                 <div>
@@ -531,7 +547,7 @@ export default function App() {
                     RELEASE NOTIFICATION
                   </h3>
                   <p className="text-zinc-500 text-xs font-sans leading-relaxed">
-                    Provide credentials to log your email inside our secure registry database. Subscribers automatically receive direct early-access shopping passes the precise second the timer hits zero.
+                    Leave your email to receive early access instructions the moment this collection officially drops.
                   </p>
                 </div>
 
@@ -547,8 +563,8 @@ export default function App() {
                       className="flex flex-col gap-4 mt-8"
                     >
                       <div className="flex flex-col gap-1">
-                        <label className="font-mono text-[9px] text-zinc-600 uppercase">
-                          CLIENT ENDPOINT EMAIL
+                        <label className="font-mono text-[9px] text-zinc-650 uppercase">
+                          YOUR EMAIL ADDRESS
                         </label>
                         <input
                           required
@@ -556,7 +572,7 @@ export default function App() {
                           value={alertFormEmail}
                           onChange={(e) => setAlertFormEmail(e.target.value)}
                           className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] rounded-none py-3 px-4 font-mono text-xs outline-none text-[#EFFF00] transition-colors"
-                          placeholder="ENTER_PATRON_EMAIL..."
+                          placeholder="your.email@example.com"
                         />
                         {alertError && (
                           <span className="font-mono text-[9px] text-red-400 mt-1 block uppercase font-bold">
@@ -573,7 +589,7 @@ export default function App() {
                         {alertSubmitting ? (
                           <>
                             <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                            VAULTING ENTRY...
+                            SUBSCRIBING...
                           </>
                         ) : (
                           <>
@@ -593,24 +609,24 @@ export default function App() {
                     >
                       <div className="border border-[#EFFF00] bg-[#121207] p-6 relative overflow-hidden">
                         <span className="font-mono text-[8px] text-[#EFFF00]/50 tracking-wider block mb-2">
-                          DATABASE TRANSACTION IP-V4: VERIFIED_RECORDED
+                          NEWSLETTER REGISTRATION
                         </span>
                         
                         <div className="flex items-center gap-2 text-white">
                           <Check size={14} className="text-[#EFFF00]" />
                           <h4 className="font-mono text-xs font-black uppercase tracking-wider text-[#EFFF00]">
-                            ALERT ACTIVE ON DATABASE
+                            YOU'RE ON THE LIST!
                           </h4>
                         </div>
                         <p className="text-zinc-400 text-[11px] font-sans mt-2 leading-relaxed">
-                          Your email coordinates have been logged in the secure atelier registry. Early purchase doors open instantly on countdown completion.
+                          Your email was saved in our notification list. You will receive an exclusive early shopping pass the second the countdown timer runs out.
                         </p>
 
                         <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#EFFF00]/20 font-mono text-[8px] text-[#EFFF00]/60">
-                          <span>REGISTRY: CONFIRMED MASTER LIST</span>
+                          <span>NOTIFICATIONS: ENABLED</span>
                           <span className="flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
-                            SECURE ACCESS RECORDED
+                            EMAIL REGISTERED
                           </span>
                         </div>
                       </div>
@@ -619,7 +635,7 @@ export default function App() {
                         onClick={() => setAlertSubscribed(false)}
                         className="w-full bg-transparent border border-zinc-900 hover:border-zinc-800 text-zinc-550 font-mono text-[9px] py-2 uppercase tracking-wide transition-colors cursor-pointer"
                       >
-                        [ SUBSCRIBE ANOTHER EMAIL INDEX ]
+                        [ SUBSCRIBE ANOTHER EMAIL ]
                       </button>
                     </motion.div>
                   )}
@@ -633,27 +649,27 @@ export default function App() {
 
       </main>
 
-      {/* FOOTER: CREATIVE DESIGN STUDIO SIGNATURE */}
+      {/* FOOTER: DESIGN STUDIO FOOTER */}
       <footer className="bg-black text-zinc-650 border-t border-zinc-950 py-16 px-4 md:px-8 relative z-20 font-mono text-[10px] tracking-wide">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           
           {/* Trademark details */}
           <div className="flex flex-col gap-2">
             <span className="font-sans font-black text-white text-sm tracking-wider uppercase">[ CACTUS BEAR ]</span>
-            <span>EXPERIMENTALS & TAILORED FINISHES Ltd.</span>
-            <span>LONDON // CHESHIRE // INTERNATIONAL ATELIER</span>
+            <span>EXPERIMENTAL PREMIUM APPAREL</span>
+            <span>LONDON & CHESHIRE DESIGN STUDIO</span>
           </div>
 
           <div className="flex flex-col md:items-end gap-1 text-zinc-500">
-            <span>STUDIO STATUS: ACTIVE ONLINE</span>
-            <span>CREATIVE ENVIRONMENT VERIFIED • HAND-DYED COUTURE</span>
+            <span>Cactus Bear Studio</span>
+            <span>Premium Streetwear & Heavyweight Garments</span>
             <span>© 2026 CACTUS BEAR APPAREL GROUP. ALL RIGHTS RESERVED.</span>
           </div>
 
         </div>
       </footer>
 
-      {/* SLIDING REGISTERED CART DRAWERS */}
+      {/* SHOPPING CART DRAWER */}
       <CartDrawer
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
@@ -663,7 +679,7 @@ export default function App() {
         onClearCart={handleClearCart}
       />
 
-      {/* GOOGLE INTERACTIVE SIGN-IN ACCESS PORT */}
+      {/* GOOGLE SIGN-IN MODAL */}
       <GoogleAuthModal
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
@@ -672,7 +688,7 @@ export default function App() {
         }}
       />
 
-      {/* CHIBUNDUSADIQ ADMINISTRATIVE CONTROL GRID */}
+      {/* ADMINISTRATIVE WORKSPACE MODAL */}
       {currentUser?.isAdmin && (
         <AdminWorkspaceModal
           isOpen={adminOpen}

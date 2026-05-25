@@ -39,12 +39,12 @@ export default function CartDrawer({
   const coreShippingFee = cartSubtotal > 300 ? 0 : cart.length > 0 ? 15 : 0;
   const vaultTotal = cartSubtotal + coreShippingFee;
 
-  const triggerSecureCheckout = (e: React.FormEvent) => {
+  const triggerSecureCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     
-    setTimeout(() => {
-      const savedOrder = dbService.addOrder({
+    try {
+      const savedOrder = await dbService.addOrder({
         name: shippingForm.name,
         email: shippingForm.email,
         address: shippingForm.address,
@@ -54,9 +54,12 @@ export default function CartDrawer({
         totalPrice: vaultTotal
       });
       setOrderHash(savedOrder.id);
-      setSubmitting(false);
       setCheckoutStep("confirm");
-    }, 1500);
+    } catch (err) {
+      console.error("Order creation failed:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCompleteFlow = () => {
@@ -178,7 +181,7 @@ export default function CartDrawer({
                                 <div className="flex items-center border border-zinc-900 bg-black">
                                   <button
                                     onClick={() => onUpdateQty(item.id, -1)}
-                                    className="px-2 py-0.5 text-xs text-zinc-505 hover:text-white"
+                                    className="px-2 py-0.5 text-xs text-zinc-500 hover:text-white"
                                   >
                                     -
                                   </button>
@@ -187,7 +190,7 @@ export default function CartDrawer({
                                   </span>
                                   <button
                                     onClick={() => onUpdateQty(item.id, 1)}
-                                    className="px-2 py-0.5 text-xs text-zinc-505 hover:text-white"
+                                    className="px-2 py-0.5 text-xs text-zinc-500 hover:text-white"
                                   >
                                     +
                                   </button>
@@ -218,52 +221,52 @@ export default function CartDrawer({
                     </div>
                   )}
 
-                  {/* Step TWO: Brutalist Shipping Manifest inputs */}
+                  {/* Step TWO: Shipping details */}
                   {checkoutStep === "shipping" && (
                     <form onSubmit={triggerSecureCheckout} className="flex flex-col gap-4">
                       <span className="font-mono text-[10px] text-[#EFFF00] tracking-wider block mb-2">
-                        [ MANDATORY SHIPPING PARAMETERS ]
+                        [ SHIPPING DETAILS ]
                       </span>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[9px] text-zinc-500 uppercase">FULL NAME / CONSIGNEE</label>
+                        <label className="font-mono text-[9px] text-zinc-500 uppercase">FULL NAME</label>
                         <input
                           required
                           type="text"
                           value={shippingForm.name}
                           onChange={(e) => setShippingForm({ ...shippingForm, name: e.target.value })}
                           className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors"
-                          placeholder="Consignee identifier name..."
+                          placeholder="Your full name..."
                         />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[9px] text-zinc-500 uppercase">SECURED EMAIL (DHL UPDATES)</label>
+                        <label className="font-mono text-[9px] text-zinc-500 uppercase">EMAIL ADDRESS</label>
                         <input
                           required
                           type="email"
                           value={shippingForm.email}
                           onChange={(e) => setShippingForm({ ...shippingForm, email: e.target.value })}
                           className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors"
-                          placeholder="name@securedomain.com"
+                          placeholder="you@example.com"
                         />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[9px] text-zinc-500 uppercase">STREET ADDRESS CODES</label>
+                        <label className="font-mono text-[9px] text-zinc-500 uppercase">STREET ADDRESS</label>
                         <input
                           required
                           type="text"
                           value={shippingForm.address}
                           onChange={(e) => setShippingForm({ ...shippingForm, address: e.target.value })}
                           className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors"
-                          placeholder="Flat, building details, core street..."
+                          placeholder="House number, street name, apartment..."
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-mono text-[9px] text-zinc-500 uppercase">CITY METROPOLIS</label>
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">CITY</label>
                           <input
                             required
                             type="text"
@@ -274,7 +277,7 @@ export default function CartDrawer({
                           />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-mono text-[9px] text-zinc-500 uppercase">NATION DISTRICT</label>
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">COUNTRY</label>
                           <input
                             required
                             type="text"
@@ -289,14 +292,14 @@ export default function CartDrawer({
                       <div className="flex flex-col gap-1.5 mt-2">
                         <label className="font-mono text-[9px] text-[#EFFF00] uppercase flex items-center gap-1">
                           <KeyRound size={10} />
-                          PASS CODE ACCESS OPTIONAL
+                          ACCESS OR DISCOUNT CODE (OPTIONAL)
                         </label>
                         <input
                           type="text"
                           value={shippingForm.cryptKey}
                           onChange={(e) => setShippingForm({ ...shippingForm, cryptKey: e.target.value })}
                           className="w-full bg-black border border-[#EFFF00]/15 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-[#EFFF00]"
-                          placeholder="Leave blank unless registered in list..."
+                          placeholder="Enter coupon or team code..."
                         />
                       </div>
 
@@ -305,7 +308,7 @@ export default function CartDrawer({
                         disabled={submitting}
                         className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] disabled:bg-[#EFFF00]/40 text-black font-mono font-bold text-xs py-3 tracking-widest uppercase transition-colors rounded-none mt-6 flex items-center justify-center gap-2"
                       >
-                        {submitting ? "DIGITALIZING SHIPMENT..." : "VERIFY SECURE SHIPPING DATA & LOCK"}
+                        {submitting ? "PROCESSING PRE-ORDER..." : "PLACE FREE PRE-ORDER RESERVATION"}
                       </button>
 
                       <button
@@ -313,7 +316,7 @@ export default function CartDrawer({
                         onClick={() => setCheckoutStep("cart")}
                         className="w-full bg-transparent border border-zinc-900 hover:border-zinc-700 font-mono text-[9px] py-2 uppercase tracking-wide transition-colors"
                       >
-                        [ BACK TO ORDER DIRECTORY ]
+                        [ BACK TO CART ]
                       </button>
                     </form>
                   )}
@@ -331,13 +334,13 @@ export default function CartDrawer({
 
                       <div>
                         <span className="text-[#EFFF00] font-mono text-[11px] tracking-widest font-black uppercase block mb-1">
-                          COMING SOON
+                          THANK YOU
                         </span>
                         <h3 className="text-xl font-sans font-black uppercase tracking-tight text-white">
-                          PRE-ORDER RECOGNIZED
+                          PRE-ORDER SAVED
                         </h3>
                         <p className="text-zinc-400 text-xs mt-3 leading-relaxed font-sans px-2">
-                          Our final checkout gates are opening soon. We have officially registered and recorded your pre-order in our atelier database. You will be the very first notified upon your order's presentation and dispatch!
+                          We have received your pre-order reservation! Since this is a preview collection, actual payment checkout will open once the items officially drop. We will email you with early access instructions the second they become available.
                         </p>
                       </div>
 
@@ -352,17 +355,17 @@ export default function CartDrawer({
                           <span className="text-zinc-600 uppercase font-black">DELIVERY AREA:</span> {shippingForm.address}, {shippingForm.city}, {shippingForm.country}
                         </div>
                         <div className="border-t border-zinc-900 pt-2 mt-2 flex justify-between">
-                          <span className="text-[#EFFF00]">PRE-ORDER RESERVATION PASS:</span>
+                          <span className="text-[#EFFF00]">RESERVATION CODE:</span>
                           <strong className="text-white select-all">{orderHash}</strong>
                         </div>
                       </div>
 
                       <div className="border border-[#EFFF00]/25 bg-[#121207]/30 p-3 mt-2">
                         <span className="font-mono text-[9px] text-[#EFFF00] tracking-wide block uppercase">
-                          ⚡ PRE-ORDER ACCESS REGISTERED
+                          No payment needed now
                         </span>
                         <p className="text-zinc-500 text-[9px] uppercase font-mono mt-1">
-                          Actual payment is disabled until standard collections drop. No charges have been made.
+                          No charges have been made. You will receive a link to checkout once the collection officially launches.
                         </p>
                       </div>
 

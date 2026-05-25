@@ -1,5 +1,26 @@
 import { Product, CartItem } from "../types";
 import { CACTUS_BEAR_PRODUCTS } from "../data";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc 
+} from "firebase/firestore";
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword 
+} from "firebase/auth";
+import firebaseConfig from "../../firebase-applet-config.json";
 
 // Type definitions for Db Pre-Orders
 export interface DbOrder {
@@ -26,11 +47,79 @@ export interface DropTimerConfig {
   notifyEmails: string[];
 }
 
-// Global persistence store inside localStorage
+// Global persistence store inside localStorage (for fallback mode)
 const STORAGE_PRODUCTS_KEY = "cactus_bear_dynamic_products";
 const STORAGE_ORDERS_KEY = "cactus_bear_dynamic_orders";
 const STORAGE_SESSION_KEY = "cactus_bear_auth_session";
 const STORAGE_TIMER_KEY = "cactus_bear_timer_config";
+
+// Detect if Firebase has been provisioned with real credentials
+const isFirebaseConfigured = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== "");
+
+let app: any = null;
+export let db: any = null;
+export let auth: any = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    db = getFirestore(app);
+    auth = getAuth(app);
+    console.log("Firebase DB initialized successfully (Production Live Mode).");
+  } catch (err) {
+    console.error("Firebase startup exception:", err);
+  }
+} else {
+  console.log("Using LocalStorage fallback database mode.");
+}
+
+// Error Handling spec matching Phase 3 / Pillar 8 rules
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid || null,
+      email: auth?.currentUser?.email || null,
+      emailVerified: auth?.currentUser?.emailVerified || null,
+      isAnonymous: auth?.currentUser?.isAnonymous || null,
+      tenantId: auth?.currentUser?.tenantId || null,
+      providerInfo: auth?.currentUser?.providerData?.map((provider: any) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error Payload: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 // Setup initial drop config
 const getInitialTimer = (): DropTimerConfig => {
@@ -59,7 +148,6 @@ const getInitialTimer = (): DropTimerConfig => {
   return defaultTimer;
 };
 
-// Init default products in DB if empty
 const getInitialProducts = (): Product[] => {
   const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
   if (saved) {
@@ -73,7 +161,6 @@ const getInitialProducts = (): Product[] => {
   return CACTUS_BEAR_PRODUCTS;
 };
 
-// Initial orders
 const getInitialOrders = (): DbOrder[] => {
   const saved = localStorage.getItem(STORAGE_ORDERS_KEY);
   if (saved) {
@@ -83,7 +170,7 @@ const getInitialOrders = (): DbOrder[] => {
       return [];
     }
   }
-  // Let's create a beautiful default pre-order from a simulated user so the Admin has data to inspect immediately!
+  
   const defaultOrders: DbOrder[] = [
     {
       id: "CB-PRE-70A5F",
@@ -102,13 +189,6 @@ const getInitialOrders = (): DbOrder[] => {
           selectedColor: CACTUS_BEAR_PRODUCTS[0].colors[0],
           selectedSize: "L",
           quantity: 1
-        },
-        {
-          id: "std-cb-buttonup-02-Obsidian Black-XL",
-          product: CACTUS_BEAR_PRODUCTS[1],
-          selectedColor: CACTUS_BEAR_PRODUCTS[1].colors[0],
-          selectedSize: "XL",
-          quantity: 1
         }
       ]
     }
@@ -117,110 +197,233 @@ const getInitialOrders = (): DbOrder[] => {
   return defaultOrders;
 };
 
-// Main Database actions class
+// Main Database actions class handling BOTH modes natively
 class DatabaseService {
-  private products: Product[] = getInitialProducts();
-  private orders: DbOrder[] = getInitialOrders();
-  private timer: DropTimerConfig = getInitialTimer();
+  private localProducts: Product[] = getInitialProducts();
+  private localOrders: DbOrder[] = getInitialOrders();
+  private localTimer: DropTimerConfig = getInitialTimer();
 
   // Retrieve products list
-  public getProducts(): Product[] {
+  public async getProducts(): Promise<Product[]> {
+    if (isFirebaseConfigured && db) {
+      try {
+        const querySnapshot = await getDocs(collection(db, "products"));
+        const list: Product[] = [];
+        querySnapshot.forEach((doc) => {
+          list.push(doc.data() as Product);
+        });
+
+        // Seed initial products to Firestore if collection is empty
+        if (list.length === 0) {
+          console.log("Seeding initial products to Firestore...");
+          for (const item of CACTUS_BEAR_PRODUCTS) {
+            await setDoc(doc(db, "products", item.id), item);
+            list.push(item);
+          }
+        }
+        return list;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "products");
+      }
+    }
+
+    // Local Storage Fallback Mode
     this.refreshLocal();
-    return this.products;
+    return this.localProducts;
   }
 
   // Refreshes data cache
   private refreshLocal() {
     const pSaved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
     if (pSaved) {
-      try { this.products = JSON.parse(pSaved); } catch {}
+      try { this.localProducts = JSON.parse(pSaved); } catch {}
     }
     const oSaved = localStorage.getItem(STORAGE_ORDERS_KEY);
     if (oSaved) {
-      try { this.orders = JSON.parse(oSaved); } catch {}
+      try { this.localOrders = JSON.parse(oSaved); } catch {}
     }
     const tSaved = localStorage.getItem(STORAGE_TIMER_KEY);
     if (tSaved) {
-      try { this.timer = JSON.parse(tSaved); } catch {}
+      try { this.localTimer = JSON.parse(tSaved); } catch {}
     }
   }
 
   // Timer getters & subscription handlers
-  public getTimerConfig(): DropTimerConfig {
+  public async getTimerConfig(): Promise<DropTimerConfig> {
+    if (isFirebaseConfigured && db) {
+      try {
+        const docSnap = await getDoc(doc(db, "drops", "active-drop-config"));
+        if (docSnap.exists()) {
+          return docSnap.data() as DropTimerConfig;
+        } else {
+          const defaultTimer = getInitialTimer();
+          await setDoc(doc(db, "drops", "active-drop-config"), defaultTimer);
+          return defaultTimer;
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, "drops/active-drop-config");
+      }
+    }
+
     this.refreshLocal();
-    return this.timer;
+    return this.localTimer;
   }
 
-  public saveTimerConfig(config: DropTimerConfig): void {
-    this.timer = config;
+  public async saveTimerConfig(config: DropTimerConfig): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, "drops", "active-drop-config"), config);
+        return;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, "drops/active-drop-config");
+      }
+    }
+
+    this.localTimer = config;
     localStorage.setItem(STORAGE_TIMER_KEY, JSON.stringify(config));
   }
 
-  public subscribeToDrop(email: string): boolean {
-    this.refreshLocal();
+  public async subscribeToDrop(email: string): Promise<boolean> {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) return false;
-    
-    if (this.timer.notifyEmails.includes(cleanEmail)) {
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const config = await this.getTimerConfig();
+        if (config.notifyEmails.includes(cleanEmail)) {
+          return false;
+        }
+        const updatedEmails = [...config.notifyEmails, cleanEmail];
+        const updated = { ...config, notifyEmails: updatedEmails };
+        await setDoc(doc(db, "drops", "active-drop-config"), updated);
+        return true;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, "drops/active-drop-config");
+      }
+    }
+
+    this.refreshLocal();
+    if (this.localTimer.notifyEmails.includes(cleanEmail)) {
       return false; // Alrd subscribed
     }
     
-    const updatedEmails = [...this.timer.notifyEmails, cleanEmail];
-    this.timer = { ...this.timer, notifyEmails: updatedEmails };
-    localStorage.setItem(STORAGE_TIMER_KEY, JSON.stringify(this.timer));
+    const updatedEmails = [...this.localTimer.notifyEmails, cleanEmail];
+    this.localTimer = { ...this.localTimer, notifyEmails: updatedEmails };
+    localStorage.setItem(STORAGE_TIMER_KEY, JSON.stringify(this.localTimer));
     return true;
   }
 
   // Add Product (Admin Action)
-  public addProduct(p: Product): void {
-    this.refreshLocal();
-    const exists = this.products.some(item => item.id === p.id);
-    if (exists) {
-      this.products = this.products.map(item => item.id === p.id ? p : item);
-    } else {
-      this.products.push(p);
+  public async addProduct(p: Product): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, "products", p.id), p);
+        return;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `products/${p.id}`);
+      }
     }
-    localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(this.products));
+
+    this.refreshLocal();
+    const exists = this.localProducts.some(item => item.id === p.id);
+    if (exists) {
+      this.localProducts = this.localProducts.map(item => item.id === p.id ? p : item);
+    } else {
+      this.localProducts.push(p);
+    }
+    localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(this.localProducts));
   }
 
   // Delete product
-  public deleteProduct(id: string): void {
+  public async deleteProduct(id: string): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      try {
+        await deleteDoc(doc(db, "products", id));
+        return;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+      }
+    }
+
     this.refreshLocal();
-    this.products = this.products.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(this.products));
+    this.localProducts = this.localProducts.filter(item => item.id !== id);
+    localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(this.localProducts));
   }
 
   // Order Operations
-  public getOrders(): DbOrder[] {
+  public async getOrders(): Promise<DbOrder[]> {
+    if (isFirebaseConfigured && db) {
+      try {
+        const querySnapshot = await getDocs(collection(db, "orders"));
+        const list: DbOrder[] = [];
+        querySnapshot.forEach((doc) => {
+          list.push(doc.data() as DbOrder);
+        });
+        
+        // Seed default order if empty
+        if (list.length === 0) {
+          const defaults = getInitialOrders();
+          for (const ord of defaults) {
+            await setDoc(doc(db, "orders", ord.id), ord);
+            list.push(ord);
+          }
+        }
+        return list;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "orders");
+      }
+    }
+
     this.refreshLocal();
-    return this.orders;
+    return this.localOrders;
   }
 
-  public addOrder(order: Omit<DbOrder, "id" | "createdAt" | "status">): DbOrder {
-    this.refreshLocal();
+  public async addOrder(order: Omit<DbOrder, "id" | "createdAt" | "status">): Promise<DbOrder> {
+    const orderId = "CB-OR-" + Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase();
+    const createdAt = new Date().toISOString();
     const newOrder: DbOrder = {
       ...order,
-      id: "CB-OR-" + Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase(),
+      id: orderId,
       status: "Pending",
-      createdAt: new Date().toISOString()
+      createdAt: createdAt
     };
-    this.orders.unshift(newOrder);
-    localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(this.orders));
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, "orders", orderId), newOrder);
+        return newOrder;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `orders/${orderId}`);
+      }
+    }
+
+    this.refreshLocal();
+    this.localOrders.unshift(newOrder);
+    localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(this.localOrders));
     return newOrder;
   }
 
-  public updateOrderStatus(id: string, status: DbOrder["status"]): void {
+  public async updateOrderStatus(id: string, status: DbOrder["status"]): Promise<void> {
+    if (isFirebaseConfigured && db) {
+      try {
+        await updateDoc(doc(db, "orders", id), { status });
+        return;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `orders/${id}`);
+      }
+    }
+
     this.refreshLocal();
-    this.orders = this.orders.map(order => 
+    this.localOrders = this.localOrders.map(order => 
       order.id === id ? { ...order, status } : order
     );
-    localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(this.orders));
+    localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(this.localOrders));
   }
 }
 
 export const dbService = new DatabaseService();
 
-// AUTH SERVICE - SIMULATED SLEEK GOOGLE POPUP LOGIN WITH SECTIONS
+// AUTH SERVICE - SIMULATED WITH REAL SEED CAPABILITIES
 export interface UserSession {
   uid: string;
   email: string;
@@ -251,15 +454,52 @@ class AuthService {
   public signOut(): void {
     this.currentSession = null;
     localStorage.removeItem(STORAGE_SESSION_KEY);
+    if (isFirebaseConfigured && auth) {
+      try {
+        firebaseSignOut(auth);
+      } catch (err) {
+        console.error("Firebase Auth sign out failure:", err);
+      }
+    }
   }
 
-  // Mock standard Google popup select
+  // Real or Simulated Google Sign In
+  public async signInWithGoogle(): Promise<UserSession> {
+    if (isFirebaseConfigured && auth) {
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const fbUser = result.user;
+        const emailAddress = fbUser.email || "";
+        const isAdminUser = emailAddress.trim().toLowerCase() === "chibundusadiq@gmail.com";
+        
+        const userSession: UserSession = {
+          uid: fbUser.uid,
+          email: emailAddress,
+          displayName: fbUser.displayName || emailAddress.split("@")[0],
+          photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${fbUser.uid}`,
+          isAdmin: isAdminUser
+        };
+
+        this.currentSession = userSession;
+        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+        return userSession;
+      } catch (error) {
+        console.error("Firebase Google Auth error:", error);
+        throw error;
+      }
+    }
+
+    // Standard high-fidelity developer simulation bypass
+    return this.signInWithGoogleSimulate("chibundusadiq@gmail.com");
+  }
+
+  // Backup Google simulation with email input bypass
   public signInWithGoogleSimulate(emailAddress: string): UserSession {
     const standardName = emailAddress.split("@")[0];
     const cleanName = standardName.charAt(0).toUpperCase() + standardName.slice(1);
     
     // Check if user is chibundusadiq (admin bypass)
-    // The user's exact email is "chibundusadiq@gmail.com"
     const isAdminUser = emailAddress.trim().toLowerCase() === "chibundusadiq@gmail.com";
     
     const userSession: UserSession = {
@@ -268,6 +508,42 @@ class AuthService {
       displayName: cleanName,
       photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${standardName}`,
       isAdmin: isAdminUser
+    };
+
+    this.currentSession = userSession;
+    localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+    return userSession;
+  }
+
+  // Mock Email & Password login select
+  public signInWithEmailSimulate(emailAddress: string, password?: string): UserSession {
+    const standardName = emailAddress.split("@")[0];
+    const cleanName = standardName.charAt(0).toUpperCase() + standardName.slice(1);
+    
+    const isAdminUser = emailAddress.trim().toLowerCase() === "chibundusadiq@gmail.com";
+    
+    const userSession: UserSession = {
+      uid: "email-uid-" + Math.floor(10000 + Math.random() * 90000),
+      email: emailAddress.trim().toLowerCase(),
+      displayName: cleanName,
+      photoURL: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${standardName}`,
+      isAdmin: isAdminUser
+    };
+
+    this.currentSession = userSession;
+    localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+    return userSession;
+  }
+
+  // Mock Guest/VIP login select
+  public signInGuestSimulate(): UserSession {
+    const guestId = Math.floor(1000 + Math.random() * 9000);
+    const userSession: UserSession = {
+      uid: "guest-uid-" + guestId,
+      email: `guest-${guestId}@cactusbear.club`,
+      displayName: `Guest Patron #${guestId}`,
+      photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=guest-${guestId}`,
+      isAdmin: false
     };
 
     this.currentSession = userSession;

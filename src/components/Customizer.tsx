@@ -12,29 +12,29 @@ interface CustomizerProps {
 const CUSTOM_BASE_PRODUCTS: Product[] = [
   {
     id: "cust-hoodie",
-    name: "CUST-01 // OVERSIZED HOODIE",
+    name: "01 // OVERSIZED HOODIE",
     category: "Outerwear",
     price: 210,
-    sku: "CUST-HD-01",
-    description: "Bespoke custom-dyed weight 520GSM loopback cotton hoodie framework.",
-    details: ["520GSM French Terry", "Zero drawstring neck hoop", "Double-lock seam cuffs"],
+    sku: "CB-HD-01",
+    description: "Heavyweight 520GSM loopback organic cotton comfort hoodie.",
+    details: ["520nd French Terry Cotton", "Clean drawstring-free neck hood", "Sturdy double-lock stitched cuffs"],
     sizes: ["S", "M", "L", "XL", "XXL"],
     colors: [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
-      { name: "Mutant Lime", hex: "#EFFF00", bgHex: "#EFFF00", isYellowTint: true },
+      { name: "Neon Cactus", hex: "#EFFF00", bgHex: "#EFFF00", isYellowTint: true },
       { name: "Soot Grey", hex: "#22252a", bgHex: "#22252a" },
-      { name: "Acid Blood Amber", hex: "#aa4012", bgHex: "#aa4012" }
+      { name: "Rust Orange", hex: "#aa4012", bgHex: "#aa4012" }
     ],
     mockupType: "hoodie"
   },
   {
     id: "cust-tee",
-    name: "CUST-02 // BOXY JERSEY TEE",
+    name: "02 // BOXY JERSEY TEE",
     category: "Tees",
     price: 90,
-    sku: "CUST-TE-01",
-    description: "Bespoke pre-washed boxy heavyweight cotton jersey ready for bespoke placement.",
-    details: ["280GSM Heavy jersey", "Classic chunky neck ribbing", "Reinforced shoulders"],
+    sku: "CB-TE-01",
+    description: "Premium pre-shrunk boxy heavyweight cotton jersey tee.",
+    details: ["280GSM Heavy jersey cotton", "Thick durable ribbed collar", "Reinforced shoulders style"],
     sizes: ["S", "M", "L", "XL"],
     colors: [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
@@ -45,28 +45,28 @@ const CUSTOM_BASE_PRODUCTS: Product[] = [
   },
   {
     id: "cust-puffer",
-    name: "CUST-03 // QUILTED DETACHABLE PUFFER",
+    name: "03 // QUILTED DETACHABLE PUFFER",
     category: "Outerwear",
     price: 310,
-    sku: "CUST-PF-01",
-    description: "Double insulated quilted industrial outer shield. Detachable accessories.",
-    details: ["Resistant nylon membrane", "Thermal goose fill", "YKK dual puller"],
+    sku: "CB-PF-01",
+    description: "Thick quilted warm insulated puffer jacket with removable accessories.",
+    details: ["Water-resistant outer wind shell", "Maximum warmth premium synthetic fill", "Heavy YKK two-way zipper"],
     sizes: ["M", "L", "XL"],
     colors: [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
-      { name: "Mutant Lime", hex: "#EFFF00", bgHex: "#EFFF00", isYellowTint: true },
+      { name: "Neon Cactus", hex: "#EFFF00", bgHex: "#EFFF00", isYellowTint: true },
       { name: "Charcoal Slate", hex: "#1f2937", bgHex: "#1f2937" }
     ],
     mockupType: "puffer"
   },
   {
     id: "cust-cap",
-    name: "CUST-04 // TWILL DISTRESSED CAP",
+    name: "04 // TWILL DISTRESSED CAP",
     category: "Headwear",
     price: 60,
-    sku: "CUST-CP-01",
-    description: "6-panel vintage construction, brass adjustment buckle.",
-    details: ["Washed heavy dynamic twill", "6-panel classic crown style", "Adjustable secure strap"],
+    sku: "CB-CP-01",
+    description: "Washed twill vintage 6-panel cap with adjustable brass buckle.",
+    details: ["Vintage washed heavy cotton twill", "Classic 6-panel construction style", "Adjustable strap with brass buckle"],
     sizes: ["OS (Adjustable)"],
     colors: [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
@@ -347,8 +347,8 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
 
             {/* Micro Details info footer bar */}
             <div className="w-full flex justify-between items-center text-zinc-500 font-mono text-[10px] pt-4 border-t border-zinc-900">
-              <span>CANVAS: ORGANIC SPUN</span>
-              <span>PLACEMENT: STATIC {position.toUpperCase()}</span>
+              <span>FABRIC: 100% COTTON</span>
+              <span>POSITION: {position.toUpperCase()}</span>
               <span>PRICE: ${selectedProduct.price}.00 USD</span>
             </div>
           </div>
@@ -359,7 +359,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
             {/* Garment selection cards */}
             <div className="bg-[#0b0b0c] border border-zinc-900 p-6 flex flex-col gap-4">
               <span className="text-zinc-500 font-mono text-[10px] tracking-wider block">
-                01 // SELECT PLATFORM TEMPLATE
+                01 // SELECT APPAREL TYPE
               </span>
               
               <div className="grid grid-cols-2 gap-3">
@@ -394,7 +394,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
             <div className="bg-[#0b0b0c] border border-zinc-900 p-6 flex flex-col gap-4">
               <div className="flex justify-between items-center">
                 <span className="text-zinc-500 font-mono text-[10px] tracking-wider block">
-                  02 // APPAREL STAIN & WASH Presets
+                  02 // SELECT COLOR
                 </span>
                 <span className="font-mono text-[10px] text-[#EFFF00]">
                   {activeColor.name}
@@ -416,7 +416,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                     >
                       {isSelected && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <Check size={14} className={color.isYellowTint ? "text-black" : "text-[#EFFF00]"} />
+                           <Check size={14} className={color.isYellowTint ? "text-black" : "text-[#EFFF00]"} />
                         </div>
                       )}
                     </button>
@@ -429,11 +429,11 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
             <div className="bg-[#0b0b0c] border border-zinc-900 p-6 flex flex-col gap-6">
               <div>
                 <span className="text-zinc-500 font-mono text-[10px] tracking-wider block mb-3">
-                  03 // GRAPHIC ORIENTATION & DIMENSION
+                  03 // PRINT POSITION & SIZE
                 </span>
 
                 {/* Print Placement Toggle */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-black/80 border border-zinc-900 mb-6">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-black/80 border border-zinc-900 mb-6 font-bold">
                   <button
                     onClick={() => setPosition("front")}
                     disabled={selectedProduct.mockupType === "cap"}
@@ -443,7 +443,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                         : "text-zinc-500 hover:text-white"
                     }`}
                   >
-                    FRONT EMBLEM
+                    FRONT PRINT
                   </button>
                   <button
                     onClick={() => setPosition("back")}
@@ -454,7 +454,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                         : "text-zinc-500 hover:text-white"
                     }`}
                   >
-                    BACK PANEL
+                    BACK PRINT
                   </button>
                 </div>
 
@@ -463,7 +463,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                   {/* Print Scale */}
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between font-mono text-[10px] text-zinc-500">
-                      <span>CROWN PLACEMENT SCALE</span>
+                      <span>CROWN GRAPHIC SCALE</span>
                       <span className="text-white">{(scale * 100).toFixed(0)}%</span>
                     </div>
                     <input
@@ -480,7 +480,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                   {/* Radioactive Glow Intensity */}
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between font-mono text-[10px] text-zinc-500">
-                      <span>GLOW FILTER SHADOW DEVIATION</span>
+                      <span>GLOW INTENSITY</span>
                       <span className="text-white">{glowIntensity}%</span>
                     </div>
                     <input
@@ -499,7 +499,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
               {/* Sizing choosing grid */}
               <div>
                 <span className="text-zinc-500 font-mono text-[10px] tracking-wider block mb-2">
-                  04 // SPECIFY CORE SIZE
+                  04 // SELECT SIZE
                 </span>
                 <div className="flex gap-2">
                   {selectedProduct.sizes.map((size) => {

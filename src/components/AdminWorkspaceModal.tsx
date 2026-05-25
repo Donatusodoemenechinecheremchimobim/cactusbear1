@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar } from "lucide-react";
 import { Product, ProductCat, ApparelColor } from "../types";
@@ -18,17 +18,16 @@ export default function AdminWorkspaceModal({
   const [activeTab, setActiveTab] = useState<"products" | "deliveries" | "timer">("products");
 
   // State cache
-  const [products, setProducts] = useState<Product[]>(() => dbService.getProducts());
-  const [orders, setOrders] = useState<DbOrder[]>(() => dbService.getOrders());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<DbOrder[]>([]);
 
   // Upcoming Drop Timer States
-  const initialTimerConfig = dbService.getTimerConfig();
-  const [tHeading, setTHeading] = useState<string>(initialTimerConfig.heading);
-  const [tSubheading, setTSubheading] = useState<string>(initialTimerConfig.subheading);
-  const [tTargetDate, setTTargetDate] = useState<string>(initialTimerConfig.targetDate);
-  const [tDescription, setTDescription] = useState<string>(initialTimerConfig.description);
-  const [tIsActivated, setTIsActivated] = useState<boolean>(initialTimerConfig.isActivated);
-  const [tNotifyEmails, setTNotifyEmails] = useState<string[]>(initialTimerConfig.notifyEmails || []);
+  const [tHeading, setTHeading] = useState<string>("SÉRIE INCOMING // JULY SPECIALIST");
+  const [tSubheading, setTSubheading] = useState<string>("THE SAGE THORN DOUBLE-PLEAT PARACHUTE CARGOS");
+  const [tTargetDate, setTTargetDate] = useState<string>("");
+  const [tDescription, setTDescription] = useState<string>("");
+  const [tIsActivated, setTIsActivated] = useState<boolean>(true);
+  const [tNotifyEmails, setTNotifyEmails] = useState<string[]>([]);
   const [saveConfirmed, setSaveConfirmed] = useState<boolean>(false);
 
   // Form states for creating a new product
@@ -55,10 +54,41 @@ export default function AdminWorkspaceModal({
   // Sizes checklist
   const [pSizes, setPSizes] = useState<string[]>(["S", "M", "L", "XL"]);
 
-  const refreshLocalState = () => {
-    setProducts(dbService.getProducts());
-    setOrders(dbService.getOrders());
-    onRefreshProducts();
+  useEffect(() => {
+    const loadInitData = async () => {
+      try {
+        const prodData = await dbService.getProducts();
+        setProducts(prodData);
+        
+        const ordData = await dbService.getOrders();
+        setOrders(ordData);
+        
+        const timerData = await dbService.getTimerConfig();
+        setTHeading(timerData.heading);
+        setTSubheading(timerData.subheading);
+        setTTargetDate(timerData.targetDate);
+        setTDescription(timerData.description);
+        setTIsActivated(timerData.isActivated);
+        setTNotifyEmails(timerData.notifyEmails || []);
+      } catch (err) {
+        console.error("Failed to load admin db configurations:", err);
+      }
+    };
+    if (isOpen) {
+      loadInitData();
+    }
+  }, [isOpen]);
+
+  const refreshLocalState = async () => {
+    try {
+      const p = await dbService.getProducts();
+      setProducts(p);
+      const o = await dbService.getOrders();
+      setOrders(o);
+      onRefreshProducts();
+    } catch (err) {
+      console.error("Failed to refresh admin local state:", err);
+    }
   };
 
   // Add detail bullet
@@ -102,7 +132,7 @@ export default function AdminWorkspaceModal({
   };
 
   // Submit Product creation
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pName || !pSku) return;
 
@@ -120,8 +150,8 @@ export default function AdminWorkspaceModal({
       imageUrl: pImage.trim() || undefined
     };
 
-    dbService.addProduct(newProduct);
-    refreshLocalState();
+    await dbService.addProduct(newProduct);
+    await refreshLocalState();
 
     // Reset Form
     setPName("");
@@ -140,21 +170,21 @@ export default function AdminWorkspaceModal({
   };
 
   // Delete product action
-  const handleDeleteProduct = (id: string) => {
-    dbService.deleteProduct(id);
-    refreshLocalState();
+  const handleDeleteProduct = async (id: string) => {
+    await dbService.deleteProduct(id);
+    await refreshLocalState();
   };
 
   // Change delivery status dropdown
-  const handleStatusChange = (orderId: string, status: DbOrder["status"]) => {
-    dbService.updateOrderStatus(orderId, status);
-    refreshLocalState();
+  const handleStatusChange = async (orderId: string, status: DbOrder["status"]) => {
+    await dbService.updateOrderStatus(orderId, status);
+    await refreshLocalState();
   };
 
   // Save countdown timer configuration
-  const handleSaveTimerConfig = (e: React.FormEvent) => {
+  const handleSaveTimerConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    dbService.saveTimerConfig({
+    await dbService.saveTimerConfig({
       id: "active-drop-config",
       heading: tHeading.trim(),
       subheading: tSubheading.trim(),
@@ -165,6 +195,22 @@ export default function AdminWorkspaceModal({
     });
     setSaveConfirmed(true);
     setTimeout(() => setSaveConfirmed(false), 3000);
+    onRefreshProducts();
+  };
+
+  // Remove email subscriber from countdown notification list
+  const handleRemoveSubscriber = async (emailToRemove: string) => {
+    const updatedEmails = tNotifyEmails.filter(e => e !== emailToRemove);
+    setTNotifyEmails(updatedEmails);
+    await dbService.saveTimerConfig({
+      id: "active-drop-config",
+      heading: tHeading.trim(),
+      subheading: tSubheading.trim(),
+      targetDate: tTargetDate,
+      description: tDescription.trim(),
+      isActivated: tIsActivated,
+      notifyEmails: updatedEmails
+    });
     onRefreshProducts();
   };
 
@@ -500,7 +546,7 @@ export default function AdminWorkspaceModal({
                             
                             <button
                               onClick={() => handleDeleteProduct(prod.id)}
-                              className="w-8 h-8 rounded-none border border-zinc-900 hover:border-red-500 text-zinc-505 hover:text-red-400 flex items-center justify-center transition-all bg-zinc-950 cursor-pointer ml-3"
+                              className="w-8 h-8 rounded-none border border-zinc-900 hover:border-red-500 text-zinc-500 hover:text-red-400 flex items-center justify-center transition-all bg-zinc-950 cursor-pointer ml-3"
                               title="Delete Product"
                             >
                               <Trash2 size={13} />
@@ -759,10 +805,20 @@ export default function AdminWorkspaceModal({
                         ) : (
                           tNotifyEmails.map((email, i) => (
                             <div key={i} className="flex justify-between items-center bg-black border border-zinc-900 px-4 py-2.5 font-mono text-xs text-zinc-300">
-                              <span className="select-all">{email}</span>
-                              <span className="text-[9px] text-zinc-650 block bg-zinc-950 border border-zinc-900 px-1.5 py-0.5 font-bold uppercase">
-                                VERIFIED PATRON
-                              </span>
+                              <span className="select-all truncate max-w-[160px] md:max-w-xs">{email}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-[#EFFF00] border border-[#EFFF00]/20 bg-zinc-950 px-1.5 py-0.5 font-bold uppercase hidden sm:inline-block">
+                                  VERIFIED PATRON
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSubscriber(email)}
+                                  className="w-6 h-6 rounded-none border border-zinc-900 hover:border-red-500 text-zinc-500 hover:text-red-400 flex items-center justify-center bg-zinc-950 cursor-pointer transition-colors"
+                                  title="Remove Subscriber"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
                             </div>
                           ))
                         )}
