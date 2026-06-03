@@ -32,6 +32,12 @@ export default function AdminWorkspaceModal({
   const [tAdminEmail, setTAdminEmail] = useState<string>("chibundusadiq@gmail.com");
   const [saveConfirmed, setSaveConfirmed] = useState<boolean>(false);
 
+  // Async Loading States for Action Buttons
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [isSavingTimer, setIsSavingTimer] = useState<boolean>(false);
+  const [isSavingAutomation, setIsSavingAutomation] = useState<boolean>(false);
+  const [isTriggeringTest, setIsTriggeringTest] = useState<boolean>(false);
+
   // Direct Autolink (Make Alternates) Configurations
   const [webEnabled, setWebEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_webhook_enabled") === "true");
   const [webUrl, setWebUrl] = useState<string>(() => localStorage.getItem("cactus_bear_autom_webhook_url") || "");
@@ -65,28 +71,36 @@ export default function AdminWorkspaceModal({
     }
   }, [isOpen, activeTab]);
 
-  const handleSaveAutomationConfigs = (e: React.FormEvent) => {
+  const handleSaveAutomationConfigs = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem("cactus_bear_autom_webhook_enabled", String(webEnabled));
-    localStorage.setItem("cactus_bear_autom_webhook_url", webUrl.trim());
-    localStorage.setItem("cactus_bear_autom_slack_enabled", String(slEnabled));
-    localStorage.setItem("cactus_bear_autom_slack_url", slUrl.trim());
-    localStorage.setItem("cactus_bear_autom_discord_enabled", String(dcEnabled));
-    localStorage.setItem("cactus_bear_autom_discord_url", dcUrl.trim());
+    setIsSavingAutomation(true);
+    try {
+      localStorage.setItem("cactus_bear_autom_webhook_enabled", String(webEnabled));
+      localStorage.setItem("cactus_bear_autom_webhook_url", webUrl.trim());
+      localStorage.setItem("cactus_bear_autom_slack_enabled", String(slEnabled));
+      localStorage.setItem("cactus_bear_autom_slack_url", slUrl.trim());
+      localStorage.setItem("cactus_bear_autom_discord_enabled", String(dcEnabled));
+      localStorage.setItem("cactus_bear_autom_discord_url", dcUrl.trim());
 
-    // Save Email configurations
-    localStorage.setItem("cactus_bear_autom_email_enabled", String(emailEnabled));
-    localStorage.setItem("cactus_bear_autom_email_target", emailTarget.trim());
-    localStorage.setItem("cactus_bear_autom_email_key", emailKey.trim());
+      // Save Email configurations
+      localStorage.setItem("cactus_bear_autom_email_enabled", String(emailEnabled));
+      localStorage.setItem("cactus_bear_autom_email_target", emailTarget.trim());
+      localStorage.setItem("cactus_bear_autom_email_key", emailKey.trim());
 
-    // Save WhatsApp configurations
-    localStorage.setItem("cactus_bear_autom_whatsapp_enabled", String(whatsappEnabled));
-    localStorage.setItem("cactus_bear_autom_whatsapp_phone", whatsappPhone.trim());
-    localStorage.setItem("cactus_bear_autom_whatsapp_apikey", whatsappApiKey.trim());
-    localStorage.setItem("cactus_bear_autom_whatsapp_webhook", whatsappWebhook.trim());
+      // Save WhatsApp configurations
+      localStorage.setItem("cactus_bear_autom_whatsapp_enabled", String(whatsappEnabled));
+      localStorage.setItem("cactus_bear_autom_whatsapp_phone", whatsappPhone.trim());
+      localStorage.setItem("cactus_bear_autom_whatsapp_apikey", whatsappApiKey.trim());
+      localStorage.setItem("cactus_bear_autom_whatsapp_webhook", whatsappWebhook.trim());
 
-    setSaveConfirmed(true);
-    setTimeout(() => setSaveConfirmed(false), 3000);
+      // Simulate network save latency
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      setSaveConfirmed(true);
+      setTimeout(() => setSaveConfirmed(false), 3000);
+    } finally {
+      setIsSavingAutomation(false);
+    }
   };
 
   const handleClearAutomationLogs = () => {
@@ -94,7 +108,10 @@ export default function AdminWorkspaceModal({
     setAutomLogs([]);
   };
 
-  const handleTriggerManualTestRun = () => {
+  const handleTriggerManualTestRun = async () => {
+    setIsTriggeringTest(true);
+    const promises: Promise<any>[] = [];
+
     // Generate mock pre-order payload with streetwear vibes
     const testOrder = {
       id: "CB-OR-MOCK-" + Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase(),
@@ -162,7 +179,7 @@ export default function AdminWorkspaceModal({
       if (emailEnabled && emailTarget) {
         const emailEndpoint = `https://formspree.io/f/${emailKey || "xojzazgo"}`;
         
-        fetch(emailEndpoint, {
+        const emProm = fetch(emailEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({
@@ -177,6 +194,7 @@ export default function AdminWorkspaceModal({
             itemsOrdered: testOrder.items.map((it) => `${it.product.name} (${it.selectedSize})`).join(", ")
           })
         }).catch(() => {});
+        promises.push(emProm);
       }
 
       // Dispatch WhatsApp if enabled
@@ -191,7 +209,7 @@ export default function AdminWorkspaceModal({
         };
 
         if (whatsappWebhook) {
-          fetch(whatsappWebhook, {
+          const waProm = fetch(whatsappWebhook, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ to: whatsappPhone, message: formattedMessage, orderId: testOrder.id })
@@ -212,10 +230,11 @@ export default function AdminWorkspaceModal({
             localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
             setAutomLogs(updatedLogs);
           });
+          promises.push(waProm);
         } else if (whatsappApiKey) {
           const cleanPhone = whatsappPhone.replace(/\D/g, "");
           const encoded = encodeURIComponent(formattedMessage);
-          fetch(`https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encoded}&apikey=${whatsappApiKey.trim()}`, { mode: "no-cors" })
+          const cbProm = fetch(`https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encoded}&apikey=${whatsappApiKey.trim()}`, { mode: "no-cors" })
           .then(() => {
             logEntry.status = 200;
             logEntry.statusText = "Dispatched via CallMeBot Bot Channel";
@@ -232,33 +251,44 @@ export default function AdminWorkspaceModal({
             localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
             setAutomLogs(updatedLogs);
           });
+          promises.push(cbProm);
         }
       }
 
       // Now dispatch the webhooks
       if (webEnabled && webUrl) {
-        fetch(webUrl, {
+        const webProm = fetch(webUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(testOrder)
         }).catch(() => {});
+        promises.push(webProm);
       }
       if (slEnabled && slUrl) {
         const slackMessage = `✦ *MANUAL AUTOMATION HUB TEST RUN SUCCESSFUL:* ${testOrder.id} ✦`;
-        fetch(slUrl, {
+        const slProm = fetch(slUrl, {
           method: "POST",
           mode: "no-cors",
           body: JSON.stringify({ text: slackMessage })
         }).catch(() => {});
+        promises.push(slProm);
       }
       if (dcEnabled && dcUrl) {
-        fetch(dcUrl, {
+        const dcProm = fetch(dcUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: `✦ MANUAL AUTOMATION HUB TEST RUN SUCCESSFUL: ${testOrder.id} ✦` })
         }).catch(() => {});
+        promises.push(dcProm);
       }
-    } catch (e) {}
+
+      await Promise.allSettled(promises);
+      await new Promise(resolve => setTimeout(resolve, 800));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTriggeringTest(false);
+    }
   };
 
   // Form states for creating a new product
@@ -369,37 +399,44 @@ export default function AdminWorkspaceModal({
     e.preventDefault();
     if (!pName || !pSku) return;
 
-    const newProduct: Product = {
-      id: "prod-" + pSku.toLowerCase().trim() + "-" + Math.floor(Math.random() * 1000),
-      name: pName.toUpperCase().trim(),
-      category: pCategory,
-      price: pPrice,
-      sku: pSku.toUpperCase().trim(),
-      description: pDescription.trim(),
-      details: pDetails,
-      sizes: pSizes,
-      colors: pColors,
-      mockupType: pMockupType,
-      imageUrl: pImage.trim() || undefined
-    };
+    setIsPublishing(true);
+    try {
+      const newProduct: Product = {
+        id: "prod-" + pSku.toLowerCase().trim() + "-" + Math.floor(Math.random() * 1000),
+        name: pName.toUpperCase().trim(),
+        category: pCategory,
+        price: pPrice,
+        sku: pSku.toUpperCase().trim(),
+        description: pDescription.trim(),
+        details: pDetails,
+        sizes: pSizes,
+        colors: pColors,
+        mockupType: pMockupType,
+        imageUrl: pImage.trim() || undefined
+      };
 
-    await dbService.addProduct(newProduct);
-    await refreshLocalState();
+      await dbService.addProduct(newProduct);
+      await refreshLocalState();
 
-    // Reset Form
-    setPName("");
-    setPPrice(120);
-    setPCategory("Tees");
-    setPSku("");
-    setPDescription("");
-    setPMockupType("tee");
-    setPImage("");
-    setPDetails(["Heavy organic fabric run", "Pre-washed vintage style"]);
-    setPColors([
-      { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
-      { name: "Alabaster White", hex: "#FFFFFF", bgHex: "#FFFFFF" }
-    ]);
-    setPSizes(["S", "M", "L", "XL"]);
+      // Reset Form
+      setPName("");
+      setPPrice(120);
+      setPCategory("Tees");
+      setPSku("");
+      setPDescription("");
+      setPMockupType("tee");
+      setPImage("");
+      setPDetails(["Heavy organic fabric run", "Pre-washed vintage style"]);
+      setPColors([
+        { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
+        { name: "Alabaster White", hex: "#FFFFFF", bgHex: "#FFFFFF" }
+      ]);
+      setPSizes(["S", "M", "L", "XL"]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   // Delete product action
@@ -417,20 +454,27 @@ export default function AdminWorkspaceModal({
   // Save countdown timer configuration
   const handleSaveTimerConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    await dbService.saveTimerConfig({
-      id: "active-drop-config",
-      heading: tHeading.trim(),
-      subheading: tSubheading.trim(),
-      targetDate: tTargetDate,
-      description: tDescription.trim(),
-      isActivated: tIsActivated,
-      notifyEmails: tNotifyEmails,
-      adminWhatsapp: tAdminWhatsapp.trim(),
-      adminEmail: tAdminEmail.trim()
-    });
-    setSaveConfirmed(true);
-    setTimeout(() => setSaveConfirmed(false), 3000);
-    onRefreshProducts();
+    setIsSavingTimer(true);
+    try {
+      await dbService.saveTimerConfig({
+        id: "active-drop-config",
+        heading: tHeading.trim(),
+        subheading: tSubheading.trim(),
+        targetDate: tTargetDate,
+        description: tDescription.trim(),
+        isActivated: tIsActivated,
+        notifyEmails: tNotifyEmails,
+        adminWhatsapp: tAdminWhatsapp.trim(),
+        adminEmail: tAdminEmail.trim()
+      });
+      setSaveConfirmed(true);
+      setTimeout(() => setSaveConfirmed(false), 3000);
+      onRefreshProducts();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingTimer(false);
+    }
   };
 
   // Remove email subscriber from countdown notification list
@@ -744,9 +788,17 @@ export default function AdminWorkspaceModal({
 
                     <button
                       type="submit"
-                      className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] text-black font-mono font-black text-xs py-4 tracking-widest uppercase rounded-none mt-2 cursor-pointer"
+                      disabled={isPublishing}
+                      className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] disabled:bg-zinc-800 disabled:text-zinc-550 text-black font-mono font-black text-xs py-4 tracking-widest uppercase rounded-none mt-2 cursor-pointer flex items-center justify-center gap-2"
                     >
-                      PUBLISH DESIGN TO COLLECTION CATALOG
+                      {isPublishing ? (
+                        <>
+                          <RefreshCw className="animate-spin text-black" size={14} />
+                          PUBLISHING TO ARCHIVE...
+                        </>
+                      ) : (
+                        "PUBLISH DESIGN TO COLLECTION CATALOG"
+                      )}
                     </button>
                   </form>
 
@@ -1046,10 +1098,20 @@ export default function AdminWorkspaceModal({
                     <div className="flex flex-col gap-2 pt-2 border-t border-zinc-900">
                       <button
                         type="submit"
-                        className="w-full bg-[#EFFF00] hover:bg-white text-black font-mono font-black text-xs py-3 tracking-widest transition-colors rounded-none uppercase flex items-center justify-center gap-2 cursor-pointer"
+                        disabled={isSavingTimer}
+                        className="w-full bg-[#EFFF00] hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-550 text-black font-mono font-black text-xs py-3 tracking-widest transition-colors rounded-none uppercase flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <Calendar size={13} />
-                        SAVE COUNTDOWN CONFIG TO FIREBASE DB
+                        {isSavingTimer ? (
+                          <>
+                            <RefreshCw className="animate-spin text-black" size={13} />
+                            SAVING TO FIRESTORE...
+                          </>
+                        ) : (
+                          <>
+                            <Calendar size={13} />
+                            SAVE COUNTDOWN CONFIG TO FIREBASE DB
+                          </>
+                        )}
                       </button>
 
                       <AnimatePresence>
@@ -1341,9 +1403,17 @@ export default function AdminWorkspaceModal({
 
                     <button
                       type="submit"
-                      className="w-full bg-[#EFFF00] hover:bg-yellow-400 text-black font-mono font-black text-xs py-3.5 uppercase tracking-widest transition-colors cursor-pointer"
+                      disabled={isSavingAutomation}
+                      className="w-full bg-[#EFFF00] hover:bg-yellow-400 disabled:bg-zinc-800 disabled:text-zinc-550 text-black font-mono font-black text-xs py-3.5 uppercase tracking-widest transition-colors cursor-pointer flex items-center justify-center gap-2"
                     >
-                      COMMIT AUTOMATION ENDPOINTS
+                      {isSavingAutomation ? (
+                        <>
+                          <RefreshCw className="animate-spin text-black" size={13} />
+                          COMMITTING ENDPOINTS...
+                        </>
+                      ) : (
+                        "COMMIT AUTOMATION ENDPOINTS"
+                      )}
                     </button>
                   </form>
 
@@ -1369,10 +1439,18 @@ export default function AdminWorkspaceModal({
                           </button>
                           <button
                             type="button"
+                            disabled={isTriggeringTest}
                             onClick={handleTriggerManualTestRun}
-                            className="bg-zinc-900 border border-[#EFFF00]/30 hover:border-[#EFFF00] text-[#EFFF00] font-mono text-[9px] px-3.5 py-1.5 uppercase tracking-wider transition-all cursor-pointer font-bold"
+                            className="bg-zinc-900 border border-[#EFFF00]/30 hover:border-[#EFFF00] disabled:border-zinc-800 disabled:text-zinc-650 text-[#EFFF00] font-mono text-[9px] px-3.5 py-1.5 uppercase tracking-wider transition-all cursor-pointer font-bold flex items-center gap-1.5"
                           >
-                            TEST DISPATCH TICK
+                            {isTriggeringTest ? (
+                              <>
+                                <RefreshCw className="animate-spin" size={10} />
+                                TESTING...
+                              </>
+                            ) : (
+                              "TEST DISPATCH TICK"
+                            )}
                           </button>
                         </div>
                       </div>
