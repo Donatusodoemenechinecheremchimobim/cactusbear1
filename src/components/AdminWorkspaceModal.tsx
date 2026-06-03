@@ -256,13 +256,12 @@ export default function AdminWorkspaceModal({
                   CHIBUNDUSADIQ <span className="text-[#EFFF00]">CREATIVE STUDIO</span>
                 </h2>
               </div>
-
               {/* Toggles and Close button */}
-              <div className="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-start">
-                <div className="flex bg-black border border-zinc-900 p-1 rounded-none font-mono text-[10px] tracking-wider">
+              <div className="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-start w-full md:w-auto">
+                <div className="flex flex-1 md:flex-initial overflow-x-auto scrollbar-none bg-black border border-zinc-900 p-1 rounded-none font-mono text-[9px] sm:text-[10px] tracking-wider">
                   <button
                     onClick={() => setActiveTab("products")}
-                    className={`px-4 py-2 transition-all cursor-pointer ${
+                    className={`px-3 sm:px-4 py-2 transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === "products"
                         ? "bg-[#EFFF00] text-black font-extrabold"
                         : "text-zinc-500 hover:text-white"
@@ -272,7 +271,7 @@ export default function AdminWorkspaceModal({
                   </button>
                   <button
                     onClick={() => setActiveTab("deliveries")}
-                    className={`px-4 py-2 transition-all cursor-pointer ${
+                    className={`px-3 sm:px-4 py-2 transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === "deliveries"
                         ? "bg-[#EFFF00] text-black font-extrabold"
                         : "text-zinc-500 hover:text-white"
@@ -282,19 +281,19 @@ export default function AdminWorkspaceModal({
                   </button>
                   <button
                     onClick={() => setActiveTab("timer")}
-                    className={`px-4 py-2 transition-all cursor-pointer ${
+                    className={`px-3 sm:px-4 py-2 transition-all cursor-pointer whitespace-nowrap ${
                       activeTab === "timer"
                         ? "bg-[#EFFF00] text-black font-extrabold"
                         : "text-zinc-500 hover:text-white"
                     }`}
                   >
-                    UPCOMING DROP TIMER
+                    UPCOMING DROP
                   </button>
                 </div>
 
                 <button
                   onClick={onClose}
-                  className="w-10 h-10 border border-zinc-900 hover:border-red-500 bg-black flex items-center justify-center text-zinc-400 hover:text-white transition-all rounded-none cursor-pointer"
+                  className="w-10 h-10 border border-zinc-900 hover:border-red-500 bg-black flex items-center justify-center text-zinc-400 hover:text-white transition-all rounded-none cursor-pointer shrink-0"
                   title="Close Platform Admin"
                 >
                   <X size={16} />

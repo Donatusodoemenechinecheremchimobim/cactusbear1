@@ -387,17 +387,17 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </div>
 
           {/* Sizing choosing row */}
-          <div className="flex justify-between items-center">
-            <div className="flex gap-1 items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2.5">
+            <div className="flex gap-1.5 items-center">
               <span className="text-[9px] font-mono text-zinc-500 uppercase">SIZE</span>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {product.sizes.map((sz) => {
                   const isSSelected = selectedSize === sz;
                   return (
                     <button
                       key={sz}
                       onClick={() => setSelectedSize(sz)}
-                      className={`px-1.5 py-0.5 font-mono text-[9px] border ${
+                      className={`px-1.5 py-0.5 font-mono text-[9px] border transition-all ${
                         isSSelected
                           ? "bg-white text-black border-white font-bold"
                           : "border-zinc-900 text-zinc-500 hover:border-zinc-500"
@@ -414,14 +414,17 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
             <button
               onClick={handleQuickAdd}
               disabled={added}
-              className={`flex items-center justify-center w-8 h-8 rounded-none transition-all ${
+              className={`flex items-center justify-center gap-1.5 h-8 rounded-none transition-all font-mono text-[9px] tracking-widest ${
                 added
-                  ? "bg-[#EFFF00] text-black"
-                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-[#EFFF00] hover:text-[#EFFF00]"
+                  ? "bg-[#EFFF00] text-black w-full sm:w-8"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-[#EFFF00] hover:text-[#EFFF00] w-full sm:w-8"
               }`}
               title="Add to Bag"
             >
-              {added ? <Check size={14} className="animate-bounce" /> : <Plus size={14} />}
+              <span className="inline sm:hidden font-bold uppercase transition-all">
+                {added ? "ADDED" : "ADD TO BAG"}
+              </span>
+              {added ? <Check size={12} className="animate-bounce" /> : <Plus size={12} />}
             </button>
           </div>
 

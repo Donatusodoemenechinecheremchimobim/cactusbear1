@@ -238,10 +238,10 @@ export default function App() {
           </button>
         </nav>
 
-        {/* Navigation Actions and login buttons */}
-        <div className="flex items-center gap-3">
+         {/* Navigation Actions and login buttons */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {currentUser ? (
-            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-900 px-3 py-1 text-xs">
+            <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-900 px-3 py-1 text-xs">
               <img
                 src={currentUser.photoURL}
                 alt={currentUser.displayName}
@@ -275,7 +275,7 @@ export default function App() {
           ) : (
             <button
               onClick={() => setAuthOpen(true)}
-              className="flex items-center gap-1.5 border border-[#EFFF00]/25 bg-black hover:border-[#EFFF00] font-mono text-[9px] tracking-widest px-3 py-1.5 text-white hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 border border-[#EFFF00]/25 bg-black hover:border-[#EFFF00] font-mono text-[9px] tracking-widest px-3 py-1.5 text-white hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
               LOGIN
@@ -285,7 +285,7 @@ export default function App() {
           {/* Order tracking lookup trigger */}
           <button
             onClick={() => setOrdersLookupOpen(true)}
-            className="flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
+            className="hidden md:flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
           >
             <Clock size={12} className="text-[#EFFF00]" />
             <span>TRACKER</span>
@@ -294,10 +294,10 @@ export default function App() {
           {/* Vault cart trigger button */}
           <button
             onClick={() => setCartOpen(true)}
-            className="flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-3 sm:px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
           >
             <ShoppingBag size={12} className="text-[#EFFF00]" />
-            <span>BAG ({cartItemsCount})</span>
+            <span><span className="hidden xs:inline">BAG</span> ({cartItemsCount})</span>
           </button>
 
           {/* Mobile hamburger menu toggle */}
@@ -319,7 +319,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="fixed inset-x-0 top-[65px] z-30 bg-black/98 border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg"
+            className="fixed inset-x-0 top-[65px] z-30 bg-black/98 border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg max-h-[calc(100vh-65px)] overflow-y-auto"
           >
             <span className="text-[9px] font-mono text-zinc-500 tracking-[0.3em] uppercase block border-b border-zinc-950 pb-2">
               ✦ STUDIO ATELIER DIRECTORY
@@ -418,7 +418,7 @@ export default function App() {
                   className="w-full flex items-center justify-center gap-2 border border-[#EFFF00]/25 bg-black hover:border-[#EFFF00] py-3 text-center text-[10px] font-mono tracking-widest text-[#EFFF00] uppercase cursor-pointer"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
-                  INITIALIZE STUDIO SIGN-IN
+                  LOGIN
                 </button>
               )}
             </div>
@@ -580,37 +580,37 @@ export default function App() {
                 </div>
 
                 {/* Gorgeous Monospace LCD Timer Block */}
-                <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-lg mt-4">
-                  <div className="bg-zinc-950 border border-zinc-900 p-4 font-mono text-center relative overflow-hidden">
-                    <span className="text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">DAYS</span>
-                    <span className="text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-2">
+                <div className="grid grid-cols-4 gap-2 xs:gap-3 md:gap-4 max-w-lg mt-4">
+                  <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                    <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">DAYS</span>
+                    <span className="text-2xl xs:text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-1.5 xs:mt-2">
                       {String(timeLeft.days).padStart(2, '0')}
                     </span>
-                    <div className="absolute top-1 right-2 text-[7px] text-zinc-850">C1</div>
+                    <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C1</div>
                   </div>
 
-                  <div className="bg-zinc-950 border border-zinc-900 p-4 font-mono text-center relative overflow-hidden">
-                    <span className="text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">HOURS</span>
-                    <span className="text-3xl md:text-4xl font-black text-white tracking-wider block mt-2">
+                  <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                    <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">HOURS</span>
+                    <span className="text-2xl xs:text-3xl md:text-4xl font-black text-white tracking-wider block mt-1.5 xs:mt-2">
                       {String(timeLeft.hours).padStart(2, '0')}
                     </span>
-                    <div className="absolute top-1 right-2 text-[7px] text-zinc-850">C2</div>
+                    <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C2</div>
                   </div>
 
-                  <div className="bg-zinc-950 border border-zinc-900 p-4 font-mono text-center relative overflow-hidden">
-                    <span className="text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">MINS</span>
-                    <span className="text-3xl md:text-4xl font-black text-white tracking-wider block mt-2">
+                  <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                    <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">MINS</span>
+                    <span className="text-2xl xs:text-3xl md:text-4xl font-black text-white tracking-wider block mt-1.5 xs:mt-2">
                       {String(timeLeft.minutes).padStart(2, '0')}
                     </span>
-                    <div className="absolute top-1 right-2 text-[7px] text-zinc-850">C3</div>
+                    <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C3</div>
                   </div>
 
-                  <div className="bg-zinc-950 border border-zinc-900 p-4 font-mono text-center relative overflow-hidden">
-                    <span className="text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">SECS</span>
-                    <span className="text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-2">
+                  <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                    <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">SECS</span>
+                    <span className="text-2xl xs:text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-1.5 xs:mt-2">
                       {String(timeLeft.seconds).padStart(2, '0')}
                     </span>
-                    <div className="absolute top-1 right-2 text-[7px] text-zinc-850">C4</div>
+                    <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C4</div>
                   </div>
                 </div>
 
