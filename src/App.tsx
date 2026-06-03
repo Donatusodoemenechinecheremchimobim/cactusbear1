@@ -318,7 +318,7 @@ export default function App() {
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
   return (
-    <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between pb-16 md:pb-0">
+    <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between pt-16 pb-20 md:pt-0 md:pb-0">
       
       {/* GLOBAL BACKGROUND NOISE & SCANS GRID */}
       <div className="fixed inset-0 bg-[#020202] pointer-events-none z-0 overflow-hidden">
@@ -329,7 +329,7 @@ export default function App() {
       </div>
 
       {/* PERSISTENT HIGH-END STATIONS HEADER */}
-      <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-950 px-4 md:px-8 py-4 flex justify-between items-center">
+      <header className="fixed top-0 inset-x-0 md:sticky z-40 h-16 md:h-auto bg-black/90 backdrop-blur-md border-b border-zinc-950 px-4 md:px-8 py-4 md:py-5 flex justify-between items-center">
         <a
           href="#"
           onClick={(e) => {
@@ -553,7 +553,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="fixed inset-x-0 top-[65px] bottom-[56px] z-30 bg-black/98 border-t border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg justify-between overflow-y-auto"
+            className="fixed inset-x-0 top-16 bottom-[72px] z-30 bg-black/98 border-t border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg justify-between overflow-y-auto"
           >
             <span className="text-[9px] font-mono text-zinc-500 tracking-[0.3em] uppercase block border-b border-zinc-950 pb-2">
               ✦ NAVIGATE SHOP
@@ -1180,107 +1180,112 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* MOBILE PERSISTENT BOTTOM NAVIGATION TAB BAR */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900 py-2.5 px-4 flex md:hidden justify-around items-center gap-1 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
-        
-        {/* TAB 01: HOME */}
-        <button
-          onClick={() => {
-            setSelectedProductId(null);
-            setActivePage("home");
-            setMobileMenuOpen(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
-            activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
-          }`}
-        >
-          <Home size={18} className={activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
-          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">HOME</span>
-        </button>
+      {/* MOBILE PERSISTENT BOTTOM NAVIGATION WRAPPER (SECURED FIXED POSITION + REFINED LAYOUT STABILITY) */}
+      <div className="fixed bottom-0 inset-x-0 z-40 block md:hidden select-none pointer-events-none">
+        {/* Backdrop glass panel & Safe Area Bottom spacing with stable padding */}
+        <div className="relative w-full bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900 shadow-[0_-10px_35px_rgba(0,0,0,0.95)] pointer-events-auto pb-[calc(11px+env(safe-area-inset-bottom,0px))] pt-3 px-4">
+          <nav className="flex justify-around items-center gap-1">
+            
+            {/* TAB 01: HOME */}
+            <button
+              onClick={() => {
+                setSelectedProductId(null);
+                setActivePage("home");
+                setMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+                activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+              }`}
+            >
+              <Home size={18} className={activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
+              <span className="font-mono text-[8px] font-bold uppercase tracking-wider">HOME</span>
+            </button>
 
-        {/* TAB 02: CATALOG / SHOP */}
-        <button
-          onClick={() => {
-            setSelectedProductId(null);
-            setActivePage("collection");
-            setMobileMenuOpen(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
-            activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
-          }`}
-        >
-          <Package size={18} className={activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
-          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">CATALOG</span>
-        </button>
+            {/* TAB 02: CATALOG / SHOP */}
+            <button
+              onClick={() => {
+                setSelectedProductId(null);
+                setActivePage("collection");
+                setMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+                activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+              }`}
+            >
+              <Package size={18} className={activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
+              <span className="font-mono text-[8px] font-bold uppercase tracking-wider">CATALOG</span>
+            </button>
 
-        {/* TAB 03: STITCH DESIGN LAB */}
-        <button
-          onClick={() => {
-            setSelectedProductId(null);
-            setActivePage("home");
-            setMobileMenuOpen(false);
-            // Direct scroll to customizer-lab
-            setTimeout(() => {
-              const el = document.getElementById("customizer-lab");
-              if (el) {
-                el.scrollIntoView({ behavior: "smooth" });
-              }
-            }, 80);
-          }}
-          className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors outline-none"
-        >
-          <div className="relative">
-            <Cpu size={18} />
-            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
-          </div>
-          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">STITCH LAB</span>
-        </button>
+            {/* TAB 03: STITCH DESIGN LAB */}
+            <button
+              onClick={() => {
+                setSelectedProductId(null);
+                setActivePage("home");
+                setMobileMenuOpen(false);
+                // Direct scroll to customizer-lab
+                setTimeout(() => {
+                  const el = document.getElementById("customizer-lab");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth" });
+                  }
+                }, 80);
+              }}
+              className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors outline-none"
+            >
+              <div className="relative">
+                <Cpu size={18} />
+                <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
+              </div>
+              <span className="font-mono text-[8px] font-bold uppercase tracking-wider">STITCH LAB</span>
+            </button>
 
-        {/* TAB 04: BAG (CART) */}
-        <button
-          onClick={() => {
-            setMobileMenuOpen(false);
-            setCartOpen(true);
-          }}
-          className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors relative outline-none"
-        >
-          <div className="relative">
-            <ShoppingBag size={18} />
-            {cartItemsCount > 0 && (
-              <span className="absolute -top-1.5 -right-2.5 bg-[#EFFF00] text-black font-mono text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black shadow-lg">
-                {cartItemsCount}
+            {/* TAB 04: BAG (CART) */}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setCartOpen(true);
+              }}
+              className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors relative outline-none"
+            >
+              <div className="relative">
+                <ShoppingBag size={18} />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-[#EFFF00] text-black font-mono text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black shadow-lg">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </div>
+              <span className="font-mono text-[8px] font-bold uppercase tracking-wider">BAG</span>
+            </button>
+
+            {/* TAB 05: ACCOUNT DECK PORTAL / MENU */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+                mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+              }`}
+            >
+              {currentUser ? (
+                <img
+                  src={currentUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.displayName}`}
+                  alt={currentUser.displayName}
+                  className={`w-5 h-5 rounded-full border bg-zinc-950 ${
+                    mobileMenuOpen ? "border-[#EFFF00]" : "border-zinc-800"
+                  } object-cover`}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User size={18} className={mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550"} />
+              )}
+              <span className="font-mono text-[8px] font-bold uppercase tracking-wider">
+                {currentUser ? "ACCOUNT" : "MENU"}
               </span>
-            )}
-          </div>
-          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">BAG</span>
-        </button>
+            </button>
 
-        {/* TAB 05: ACCOUNT DECK PORTAL / MENU */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
-            mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
-          }`}
-        >
-          {currentUser ? (
-            <img
-              src={currentUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.displayName}`}
-              alt={currentUser.displayName}
-              className={`w-5 h-5 rounded-full border bg-zinc-950 ${
-                mobileMenuOpen ? "border-[#EFFF00]" : "border-zinc-800"
-              } object-cover`}
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <User size={18} className={mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550"} />
-          )}
-          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">
-            {currentUser ? "ACCOUNT" : "MENU"}
-          </span>
-        </button>
-
+          </nav>
+        </div>
       </div>
 
     </div>
