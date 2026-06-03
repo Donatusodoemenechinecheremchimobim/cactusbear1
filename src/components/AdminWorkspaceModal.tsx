@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar, Cpu, Terminal, Activity, Link2, RefreshCw } from "lucide-react";
+import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar, Cpu, Terminal, Activity, Link2, RefreshCw, Upload } from "lucide-react";
 import { Product, ProductCat, ApparelColor } from "../types";
-import { dbService, DbOrder } from "../services/firebase";
+import { dbService, DbOrder, uploadProductImage } from "../services/firebase";
 
 interface AdminWorkspaceModalProps {
   isOpen: boolean;
@@ -37,6 +37,10 @@ export default function AdminWorkspaceModal({
   const [isSavingTimer, setIsSavingTimer] = useState<boolean>(false);
   const [isSavingAutomation, setIsSavingAutomation] = useState<boolean>(false);
   const [isTriggeringTest, setIsTriggeringTest] = useState<boolean>(false);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [imageUploadError, setImageUploadError] = useState<string>("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Direct Autolink (Make Alternates) Configurations
   const [webEnabled, setWebEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_webhook_enabled") === "true");
@@ -70,6 +74,52 @@ export default function AdminWorkspaceModal({
       } catch {}
     }
   }, [isOpen, activeTab]);
+
+  // File Upload Handlers for Product Image
+  const [dragActive, setDragActive] = useState<boolean>(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFileUpload(file);
+  };
+
+  const processFileUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setImageUploadError("Invalid file type. Please select an image.");
+      return;
+    }
+    setIsUploadingImage(true);
+    setImageUploadError("");
+    try {
+      const uploadedUrl = await uploadProductImage(file);
+      setPImage(uploadedUrl);
+    } catch (err: any) {
+      console.error(err);
+      setImageUploadError(err?.message || "File upload failed.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await processFileUpload(e.dataTransfer.files[0]);
+    }
+  };
 
   const handleSaveAutomationConfigs = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -684,14 +734,95 @@ export default function AdminWorkspaceModal({
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="font-mono text-[9px] text-zinc-500 uppercase">PIECE DESIGN IMAGE URL (OPTIONAL PICTURE)</label>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-mono text-[9px] text-zinc-500 uppercase flex justify-between items-center">
+                        <span>PIECE DESIGN IMAGE (FIREBASE STORAGE & FALLBACK)</span>
+                        {pImage && (
+                          <button
+                            type="button"
+                            onClick={() => setPImage("")}
+                            className="text-[8px] text-red-400 hover:text-red-300 font-bold tracking-widest uppercase cursor-pointer"
+                          >
+                            ✕ CLEAR IMAGE
+                          </button>
+                        )}
+                      </label>
+                      
+                      {/* Hidden Input File Element */}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+
+                      {/* Drag & Drop Visual Area */}
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border border-dashed rounded-none p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[110px] relative overflow-hidden group ${
+                          dragActive
+                            ? "border-[#EFFF00] bg-[#EFFF00]/5"
+                            : pImage
+                            ? "border-zinc-800 bg-zinc-950/20"
+                            : "border-zinc-900 bg-zinc-950 hover:border-[#EFFF00]/40"
+                        }`}
+                      >
+                        {isUploadingImage ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <RefreshCw className="animate-spin text-[#EFFF00]" size={20} />
+                            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-widest">
+                              Uploading design to Cloud Storage...
+                            </span>
+                          </div>
+                        ) : pImage ? (
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="w-14 h-14 bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 relative overflow-hidden">
+                              <img
+                                src={pImage}
+                                alt="Uploaded preview"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <span className="font-mono text-[9px] text-zinc-500 block uppercase tracking-wider">Active Product Image</span>
+                              <span className="font-mono text-[10.5px] text-[#EFFF00] block truncate pr-4">
+                                {pImage.startsWith("data:") ? "✦ SECURE CLIENT-SIDE DATA STORE (BASE64)" : pImage}
+                              </span>
+                              <span className="font-mono text-[8.5px] text-zinc-500 block">Click or Drop another file to replace</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 py-1">
+                            <Upload className="text-zinc-600 group-hover:text-[#EFFF00] transition-colors" size={18} />
+                            <div className="font-mono text-[10px] text-zinc-400">
+                              DRAG & DROP DESIGN PICTURE OR <strong className="text-white group-hover:text-[#EFFF00] transition-all">BROWSE FILE</strong>
+                            </div>
+                            <span className="font-mono text-[8px] text-zinc-600 uppercase tracking-widest block">
+                              Supports JPG, PNG, WEBP (Auto-Compressed client-side)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {imageUploadError && (
+                        <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider mt-1 block">
+                          ⚠ {imageUploadError}
+                        </span>
+                      )}
+
+                      {/* Manual Image URL Field */}
                       <input
                         type="text"
                         value={pImage}
                         onChange={(e) => setPImage(e.target.value)}
-                        className="bg-zinc-950 border border-zinc-900 py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] text-[#EFFF00]"
-                        placeholder="https://images.unsplash.com/... (blank uses vector silhouette)"
+                        className="bg-zinc-950 border border-zinc-900 py-1 px-3.5 font-mono text-[10px] focus:border-[#EFFF00] text-[#EFFF00] tracking-tight placeholder:text-zinc-700"
+                        placeholder="Or customize manually (e.g. Unsplash URL)"
                       />
                     </div>
 

@@ -23,6 +23,7 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
 } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 // Type definitions for Db Pre-Orders
@@ -67,18 +68,105 @@ export const isFirebaseConfigured = !!(firebaseConfig && firebaseConfig.apiKey &
 let app: any = null;
 export let db: any = null;
 export let auth: any = null;
+export let storage: any = null;
 
 if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || "(default)");
     auth = getAuth(app);
+    try {
+      storage = getStorage(app);
+      console.log("Firebase Storage initialized successfully.");
+    } catch (stErr) {
+      console.warn("Storage initialization failed (likely bucket configuration missing):", stErr);
+    }
     console.log("Firebase DB initialized successfully (Production Live Mode).");
   } catch (err) {
     console.error("Firebase startup exception:", err);
   }
 } else {
   console.log("Using LocalStorage fallback database mode.");
+}
+
+/**
+ * Compresses an image client-side to ensure small document storage footprints
+ */
+export function compressImage(file: File, maxWidth = 800, maxHeight = 850, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.height = height;
+        canvas.width = width;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        reject(new Error("Failed to load image."));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => {
+      reject(new Error("Failed to read file."));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Uploads high-quality optimized file to Firebase Storage if available,
+ * or falls back gracefully to scaled base64 storage.
+ */
+export async function uploadProductImage(file: File): Promise<string> {
+  // Always optimize image client-side for maximum reliability and raw speed
+  const dataUrl = await compressImage(file);
+
+  if (isFirebaseConfigured && storage) {
+    try {
+      // Convert Optimized Data URI back to a binary blob for genuine object storage
+      const fetched = await fetch(dataUrl);
+      const blob = await fetched.blob();
+      const uniqueName = `products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+      const fileRef = ref(storage, uniqueName);
+      
+      const uploadResult = await uploadBytes(fileRef, blob, {
+        contentType: "image/jpeg"
+      });
+      const downloadUrl = await getDownloadURL(uploadResult.ref);
+      return downloadUrl;
+    } catch (err) {
+      console.warn("Storage upload failed, fallback to local base64:", err);
+      return dataUrl;
+    }
+  }
+
+  return dataUrl;
 }
 
 // Error Handling spec matching Phase 3 / Pillar 8 rules

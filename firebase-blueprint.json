@@ -64,6 +64,23 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "productId", "userId", "userName", "rating", "comment", "createdAt"]
+    },
+    "DropTimer": {
+      "title": "Drop Countdown Timer Config",
+      "description": "Dynamic custom drops and store configurations managed by admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "heading": { "type": "string" },
+        "subheading": { "type": "string" },
+        "targetDate": { "type": "string" },
+        "description": { "type": "string" },
+        "isActivated": { "type": "boolean" },
+        "notifyEmails": { "type": "array" },
+        "adminWhatsapp": { "type": "string" },
+        "adminEmail": { "type": "string" }
+      },
+      "required": ["id", "heading", "targetDate"]
     }
   },
   "firestore": {
@@ -82,6 +99,10 @@
     "/reviews/{reviewId}": {
       "schema": "Review",
       "description": "Reviews for products."
+    },
+    "/drops/{dropId}": {
+      "schema": "DropTimer",
+      "description": "Active drops configurations."
     }
   }
 }
