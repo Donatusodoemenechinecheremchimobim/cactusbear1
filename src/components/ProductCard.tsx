@@ -18,10 +18,13 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
   const [selectedColor, setSelectedColor] = useState<ApparelColor>(product.colors[0]);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [added, setAdded] = useState<boolean>(false);
+  const [adding, setAdding] = useState<boolean>(false);
   const [detailedPanel, setDetailedPanel] = useState<boolean>(false);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (adding || added) return;
+    setAdding(true);
     
     const cartItem: CartItem = {
       id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
@@ -31,13 +34,18 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
       quantity: 1,
     };
 
-    onAddToCart(cartItem);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => {
+      onAddToCart(cartItem);
+      setAdding(false);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }, 600);
   };
 
   const handleQuickBuyDefault = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (adding || added) return;
+    setAdding(true);
     
     const defaultSize = product.sizes[0] || "L";
     const defaultColor = product.colors[0];
@@ -50,9 +58,12 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
       quantity: 1,
     };
 
-    onAddToCart(cartItem);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => {
+      onAddToCart(cartItem);
+      setAdding(false);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }, 600);
   };
 
   const handleShowDetails = (e: React.MouseEvent) => {
@@ -396,10 +407,19 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         <div className="absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex gap-2 items-center">
           <button
             onClick={handleQuickBuyDefault}
-            disabled={added}
-            className="flex-1 bg-[#EFFF00] hover:bg-white disabled:bg-[#EFFF00]/50 disabled:text-black/50 text-black font-mono font-black text-[9px] tracking-wider py-2 uppercase transition-all text-center cursor-pointer"
+            disabled={adding || added}
+            className="flex-1 bg-[#EFFF00] hover:bg-white disabled:bg-[#EFFF00]/50 disabled:text-black/50 text-black font-mono font-black text-[9px] tracking-wider py-2 uppercase transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
           >
-            {added ? "ADDED!" : "QUICK BUY"}
+            {adding ? (
+              <>
+                <div className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin" />
+                LOADING...
+              </>
+            ) : added ? (
+              "ADDED!"
+            ) : (
+              "QUICK BUY"
+            )}
           </button>
           <button
             onClick={handleShowDetails}
@@ -480,7 +500,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
             {/* Quick-add button */}
             <button
               onClick={handleQuickAdd}
-              disabled={added}
+              disabled={adding || added}
               className={`flex items-center justify-center gap-1.5 h-8 rounded-none transition-all font-mono text-[9px] tracking-widest ${
                 added
                   ? "bg-[#EFFF00] text-black w-full sm:w-8"
@@ -489,23 +509,34 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
               title="Add to Bag"
             >
               <span className="inline sm:hidden font-bold uppercase transition-all">
-                {added ? "ADDED" : "ADD TO BAG"}
+                {adding ? "ADDING..." : added ? "ADDED" : "ADD TO BAG"}
               </span>
-              {added ? <Check size={12} className="animate-bounce" /> : <Plus size={12} />}
+              {adding ? (
+                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+              ) : added ? (
+                <Check size={12} className="animate-bounce" />
+              ) : (
+                <Plus size={12} />
+              )}
             </button>
           </div>
 
           {/* Quick Buy Button Strip */}
           <button
             onClick={handleQuickBuyDefault}
-            disabled={added}
+            disabled={adding || added}
             className={`w-full font-mono text-[9px] font-bold tracking-[0.15em] uppercase transition-all py-2.5 border flex items-center justify-center gap-1.5 hover:scale-[1.01] cursor-pointer ${
               added
                 ? "bg-[#EFFF00] text-black border-[#EFFF00]"
                 : "bg-black hover:bg-[#EFFF00] hover:text-black border-zinc-900 hover:border-[#EFFF00] text-zinc-400"
             }`}
           >
-            {added ? (
+            {adding ? (
+              <>
+                <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                SECURING APPAREL...
+              </>
+            ) : added ? (
               <>
                 <Check size={11} className="animate-bounce" />
                 SECURED TO BAG
@@ -559,12 +590,37 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
 
             <button
               onClick={(e) => {
-                handleQuickAdd(e);
-                setDetailedPanel(false);
+                e.stopPropagation();
+                if (adding || added) return;
+                setAdding(true);
+                const cartItem: CartItem = {
+                  id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
+                  product,
+                  selectedColor,
+                  selectedSize,
+                  quantity: 1,
+                };
+                setTimeout(() => {
+                  onAddToCart(cartItem);
+                  setAdding(false);
+                  setAdded(true);
+                  setDetailedPanel(false);
+                  setTimeout(() => setAdded(false), 2000);
+                }, 600);
               }}
-              className="w-full bg-white hover:bg-[#EFFF00] text-black font-mono font-bold text-xs py-2 transition-colors uppercase cursor-pointer"
+              disabled={adding || added}
+              className="w-full bg-white hover:bg-[#EFFF00] disabled:bg-zinc-800 text-black disabled:text-zinc-550 font-mono font-bold text-xs py-2 transition-colors uppercase cursor-pointer flex items-center justify-center gap-2"
             >
-              ADD TO BAG — ${product.price}
+              {adding ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  ADDING TO BAG...
+                </>
+              ) : added ? (
+                "ADDED!"
+              ) : (
+                `ADD TO BAG — $${product.price}`
+              )}
             </button>
           </motion.div>
         )}

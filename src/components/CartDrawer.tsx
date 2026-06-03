@@ -574,7 +574,14 @@ export default function CartDrawer({
                         disabled={submitting}
                         className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] disabled:bg-[#EFFF00]/40 text-black font-mono font-bold text-xs py-3 tracking-widest uppercase transition-colors rounded-none mt-6 flex items-center justify-center gap-2"
                       >
-                        {submitting ? "PROCESSING PRE-ORDER..." : "PLACE FREE PRE-ORDER RESERVATION"}
+                        {submitting ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            PROCESSING PRE-ORDER...
+                          </>
+                        ) : (
+                          "PLACE FREE PRE-ORDER RESERVATION"
+                        )}
                       </button>
 
                       <button

@@ -46,6 +46,7 @@ export default function ProductDetailPage({
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "L");
   const [selectedColor, setSelectedColor] = useState<ApparelColor>(product.colors[0]);
   const [added, setAdded] = useState<boolean>(false);
+  const [adding, setAdding] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"specifications" | "manufacturing" | "shipping">("specifications");
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
   const [showQrCode, setShowQrCode] = useState<boolean>(false);
@@ -97,6 +98,9 @@ export default function ProductDetailPage({
   }, [product]);
 
   const handleAddToCartClick = () => {
+    if (adding || added) return;
+    setAdding(true);
+
     const cartItem: CartItem = {
       id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
       product,
@@ -105,9 +109,12 @@ export default function ProductDetailPage({
       quantity: 1,
     };
 
-    onAddToCart(cartItem);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => {
+      onAddToCart(cartItem);
+      setAdding(false);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }, 600);
   };
 
   // Find related runs (excluding current product, limit to 2 or 3)
@@ -366,14 +373,19 @@ export default function ProductDetailPage({
               <div className="flex gap-2.5">
                 <button
                   onClick={handleAddToCartClick}
-                  disabled={added}
+                  disabled={adding || added}
                   className={`flex-1 h-14 font-mono font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-3.5 rounded-none cursor-pointer ${
                     added
                       ? "bg-[#EFFF00] text-black"
-                      : "bg-white hover:bg-[#EFFF00] text-black"
+                      : "bg-white hover:bg-[#EFFF00] text-black disabled:bg-zinc-800 disabled:text-zinc-500"
                   }`}
                 >
-                  {added ? (
+                  {adding ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      ADDING SPECIMEN...
+                    </>
+                  ) : added ? (
                     <>
                       <Check size={16} className="animate-bounce" />
                       ADDED TO CART

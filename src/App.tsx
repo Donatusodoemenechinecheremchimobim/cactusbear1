@@ -47,7 +47,7 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [headerSearchQuery, setHeaderSearchQuery] = useState<string>("");
   
-  const [activePage, setActivePage] = useState<"home" | "collection">("home");
+  const [activePage, setActivePage] = useState<"home" | "collection" | "story" | "drop">("home");
   const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "alert"; timestamp: string }[]>([]);
 
   const addToast = (message: string, type: "success" | "info" | "alert" = "success") => {
@@ -381,14 +381,26 @@ export default function App() {
             STITCH LAB
           </button>
           <button
-            onClick={() => handleNavToSection("brand-lookbook")}
-            className="hover:text-[#EFFF00] transition-colors uppercase cursor-pointer"
+            onClick={() => {
+              setSelectedProductId(null);
+              setActivePage("story");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
+              activePage === "story" ? "text-[#EFFF00] font-bold" : ""
+            }`}
           >
             OUR STORY
           </button>
           <button
-            onClick={() => handleNavToSection("unlocked-terminal")}
-            className="hover:text-[#EFFF00] transition-colors uppercase cursor-pointer"
+            onClick={() => {
+              setSelectedProductId(null);
+              setActivePage("drop");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
+              activePage === "drop" ? "text-[#EFFF00] font-bold" : ""
+            }`}
           >
             UPCOMING DROP
           </button>
@@ -593,18 +605,26 @@ export default function App() {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleNavToSection("brand-lookbook");
+                  setSelectedProductId(null);
+                  setActivePage("story");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="hover:text-[#EFFF00] text-left transition-all block cursor-pointer"
+                className={`hover:text-[#EFFF00] text-left transition-all block cursor-pointer ${
+                  activePage === "story" ? "text-[#EFFF00]" : ""
+                }`}
               >
                 OUR STORY
               </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleNavToSection("unlocked-terminal");
+                  setSelectedProductId(null);
+                  setActivePage("drop");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="hover:text-[#EFFF00] text-left transition-all block cursor-pointer"
+                className={`hover:text-[#EFFF00] text-left transition-all block cursor-pointer ${
+                  activePage === "drop" ? "text-[#EFFF00]" : ""
+                }`}
               >
                 UPCOMING DROP
               </button>
@@ -724,6 +744,254 @@ export default function App() {
             onSearchQueryChange={setHeaderSearchQuery}
             productsLoading={productsLoading}
           />
+        ) : activePage === "story" ? (
+          <div className="py-20 md:py-28 bg-black">
+            {/* Elegant Stand-alone Header */}
+            <div className="max-w-7xl mx-auto px-4 md:px-8 mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+              <div>
+                <span className="text-[#EFFF00] font-mono text-xs tracking-widest block uppercase font-black mb-1">
+                  ✦ EDITORIAL ATELIER
+                </span>
+                <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase text-white">
+                  OUR <span className="text-[#EFFF00]">STORY</span>
+                </h2>
+                <p className="text-zinc-500 text-xs mt-1.5 max-w-md font-sans">
+                  Deeply rooted in heavy craftsmanship and Lagosian subcultures, Cactus Bear represents the synthesis of streetwear durability and luxury tailoring.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setActivePage("home");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="font-mono text-[10px] tracking-widest bg-zinc-950 border border-zinc-900 hover:border-[#EFFF00] px-5 py-3 uppercase hover:text-[#EFFF00] transition-colors cursor-pointer w-max"
+              >
+                [ RETURN HOME ]
+              </button>
+            </div>
+            
+            <div className="border-t border-zinc-950">
+              <Lookbook />
+            </div>
+
+            <div className="max-w-5xl mx-auto px-4 md:px-8 mt-12 text-center border-t border-zinc-950 pt-12 flex flex-col items-center gap-4">
+              <span className="font-mono text-[10px] text-zinc-600 tracking-[0.2em] uppercase">VIEW COMPLETED COLLECTION NOW</span>
+              <button
+                onClick={() => {
+                  setSelectedProductId(null);
+                  setActivePage("collection");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="bg-[#EFFF00] hover:bg-white text-black font-mono font-black py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase flex items-center gap-2 cursor-pointer"
+              >
+                SHOP COUTURE PRODUCTS ⟶
+              </button>
+            </div>
+          </div>
+        ) : activePage === "drop" ? (
+          <div className="py-20 md:py-28 bg-[#050505]">
+            {/* Elegant Stand-alone Header */}
+            <div className="max-w-7xl mx-auto px-4 md:px-8 mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+              <div>
+                <span className="text-[#EFFF00] font-mono text-xs tracking-widest block uppercase font-black mb-1">
+                  ✦ DIGITAL SYSTEM RELEASE
+                </span>
+                <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase text-white">
+                  UPCOMING <span className="text-[#EFFF00]">DROP</span>
+                </h2>
+                <p className="text-zinc-500 text-xs mt-1.5 max-w-md font-sans">
+                  Synchronize with the Cactus Bear digital clock. Once the terminal countdown reaches absolute zero, ordering triggers instantly.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setActivePage("home");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="font-mono text-[10px] tracking-widest bg-zinc-950 border border-zinc-900 hover:border-[#EFFF00] px-5 py-3 uppercase hover:text-[#EFFF00] transition-colors cursor-pointer w-max"
+              >
+                [ RETURN HOME ]
+              </button>
+            </div>
+
+            <div className="border-t border-b border-zinc-900 bg-black/40">
+              {/* SECTION 05: INCOMING DROP & COUNTDOWN PORTAL */}
+              <section className="w-full py-16 px-4 md:px-8 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    {/* Left Column: Configurable Countdown and dynamic release definitions */}
+                    <div className="lg:col-span-7 flex flex-col gap-6">
+                      <div>
+                        <span className="text-[#EFFF00] font-mono text-xs tracking-widest block font-black uppercase mb-1">
+                          ✦ ACTIVE RELEASE TIMER
+                        </span>
+                        <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase text-white">
+                          {timerConfig.heading}
+                        </h2>
+                        <h3 className="text-xl font-mono text-zinc-400 mt-2 uppercase tracking-wide">
+                          {timerConfig.subheading}
+                        </h3>
+                        <p className="text-zinc-500 text-xs max-w-xl mt-3 leading-relaxed font-sans">
+                          {timerConfig.description}
+                        </p>
+                      </div>
+
+                      {/* Gorgeous Monospace LCD Timer Block */}
+                      <div className="grid grid-cols-4 gap-2 xs:gap-3 md:gap-4 max-w-lg mt-4">
+                        <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                          <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">DAYS</span>
+                          <span className="text-2xl xs:text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-1.5 xs:mt-2">
+                            {String(timeLeft.days).padStart(2, '0')}
+                          </span>
+                          <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C1</div>
+                        </div>
+
+                        <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                          <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">HOURS</span>
+                          <span className="text-2xl xs:text-3xl md:text-4xl font-black text-white tracking-wider block mt-1.5 xs:mt-2">
+                            {String(timeLeft.hours).padStart(2, '0')}
+                          </span>
+                          <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C2</div>
+                        </div>
+
+                        <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                          <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">MINS</span>
+                          <span className="text-2xl xs:text-3xl md:text-4xl font-black text-white tracking-wider block mt-1.5 xs:mt-2">
+                            {String(timeLeft.minutes).padStart(2, '0')}
+                          </span>
+                          <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C3</div>
+                        </div>
+
+                        <div className="bg-zinc-950 border border-zinc-900 p-2.5 xs:p-3 sm:p-4 font-mono text-center relative overflow-hidden">
+                          <span className="text-[8px] xs:text-[9px] text-zinc-650 block uppercase tracking-widest font-bold">SECS</span>
+                          <span className="text-2xl xs:text-3xl md:text-4xl font-black text-[#EFFF00] tracking-wider block mt-1.5 xs:mt-2">
+                            {String(timeLeft.seconds).padStart(2, '0')}
+                          </span>
+                          <div className="absolute top-1 right-1.5 text-[6px] xs:text-[7px] text-zinc-850">C4</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 font-mono text-[9px] text-zinc-600 mt-2">
+                        <span className="flex items-center gap-1.5 uppercase">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-ping" />
+                          LIVE COUNTDOWN
+                        </span>
+                        <span>|</span>
+                        <span>RELEASE TIME: {new Date(timerConfig.targetDate).toLocaleDateString()} {new Date(timerConfig.targetDate).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Alert Registry Form */}
+                    <div className="lg:col-span-5 bg-[#0b0b0c] border border-zinc-900 p-8 flex flex-col justify-between relative min-h-[380px]">
+                      <div className="absolute top-0 right-0 p-4 font-mono text-[9px] text-zinc-700 tracking-widest">
+                        NOTIFICATIONS
+                      </div>
+
+                      <div>
+                        <h3 className="font-sans font-extrabold text-lg uppercase tracking-tight text-white mb-2">
+                          RELEASE NOTIFICATION
+                        </h3>
+                        <p className="text-zinc-500 text-xs font-sans leading-relaxed">
+                          Leave your email to receive early access instructions the moment this collection officially drops.
+                        </p>
+                      </div>
+
+                      {/* Subscribed or Form wrapper with transitions */}
+                      <AnimatePresence mode="wait">
+                        {!alertSubscribed ? (
+                          <motion.form
+                            key="alert-signup-form-page"
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            onSubmit={handleAlertSignup}
+                            className="flex flex-col gap-4 mt-8"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <label className="font-mono text-[9px] text-zinc-650 uppercase">
+                                YOUR EMAIL ADDRESS
+                              </label>
+                              <input
+                                required
+                                type="email"
+                                value={alertFormEmail}
+                                onChange={(e) => setAlertFormEmail(e.target.value)}
+                                className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] rounded-none py-3 px-4 font-mono text-xs outline-none text-[#EFFF00] transition-colors"
+                                placeholder="your.email@example.com"
+                              />
+                              {alertError && (
+                                <span className="font-mono text-[9px] text-red-400 mt-1 block uppercase font-bold">
+                                  ⚠ {alertError}
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              type="submit"
+                              disabled={alertSubmitting}
+                              className="w-full bg-white hover:bg-[#EFFF00] text-black font-mono font-black text-xs py-3.5 tracking-widest transition-colors rounded-none uppercase flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              {alertSubmitting ? (
+                                <>
+                                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                  SUBSCRIBING...
+                                </>
+                              ) : (
+                                <>
+                                  <Mail size={14} />
+                                  NOTIFY ME ON RELEASE
+                                </>
+                              )}
+                            </button>
+                          </motion.form>
+                        ) : (
+                          <motion.div
+                            key="alert-unlocked-page"
+                            initial={{ opacity: 1, scale: 1 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="mt-8 flex flex-col gap-4"
+                          >
+                            <div className="border border-[#EFFF00] bg-[#121207] p-6 relative overflow-hidden">
+                              <span className="font-mono text-[8px] text-[#EFFF00]/50 tracking-wider block mb-2">
+                                NEWSLETTER REGISTRATION
+                              </span>
+                              
+                              <div className="flex items-center gap-2 text-white">
+                                <span className="bg-[#EFFF00]/10 border border-[#EFFF00]/30 text-[#EFFF00] p-1 ml-0 rounded-none">✓</span>
+                                <span className="font-sans font-extrabold text-sm uppercase tracking-tight">VIP PASS SAVED</span>
+                              </div>
+                              <p className="text-zinc-400 text-[11px] font-sans mt-2 leading-relaxed">
+                                Your email was saved in our notification list. You will receive an exclusive early shopping pass the second the countdown timer runs out.
+                              </p>
+
+                              <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#EFFF00]/20 font-mono text-[8px] text-[#EFFF00]/60">
+                                <span>NOTIFICATIONS: ENABLED</span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
+                                  EMAIL REGISTERED
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => setAlertSubscribed(false)}
+                              className="w-full bg-transparent border border-zinc-900 hover:border-zinc-800 text-zinc-550 font-mono text-[9px] py-2 uppercase tracking-wide transition-colors cursor-pointer"
+                            >
+                              [ SUBSCRIBE ANOTHER EMAIL ]
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      
+                    </div>
+
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
         ) : (
           <>
             <section className="relative w-full py-28 md:py-40 px-4 flex flex-col items-center justify-center text-center overflow-hidden border-b border-zinc-950">

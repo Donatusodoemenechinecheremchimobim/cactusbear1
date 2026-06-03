@@ -256,7 +256,14 @@ export default function ReviewsSection({
                     disabled={submitting}
                     className="bg-white hover:bg-[#EFFF00] disabled:bg-zinc-800 text-black disabled:text-zinc-550 font-mono font-black text-xs px-6 py-2.5 tracking-widest transition-colors uppercase cursor-pointer rounded-none flex items-center gap-2"
                   >
-                    {submitting ? "POSTING..." : "SUBMIT REVIEW"}
+                    {submitting ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        POSTING...
+                      </>
+                    ) : (
+                      "SUBMIT REVIEW"
+                    )}
                   </button>
                 </div>
               </form>
