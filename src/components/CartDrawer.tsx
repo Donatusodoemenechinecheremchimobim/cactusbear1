@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail } from "lucide-react";
-import { CartItem } from "../types";
+import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail, Heart } from "lucide-react";
+import { CartItem, Product } from "../types";
 import GlowCrown from "./GlowCrown";
 import { dbService } from "../services/firebase";
 import { NIGERIAN_STATES_AND_AREAS } from "../data/nigerianStates";
@@ -13,6 +13,9 @@ interface CartDrawerProps {
   onUpdateQty: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
+  wishlist: Product[];
+  onToggleWishlist: (productId: string) => void;
+  onAddToCart: (item: CartItem) => void;
 }
 
 export default function CartDrawer({
@@ -21,9 +24,14 @@ export default function CartDrawer({
   cart,
   onUpdateQty,
   onRemoveItem,
-  onClearCart
+  onClearCart,
+  wishlist,
+  onToggleWishlist,
+  onAddToCart
 }: CartDrawerProps) {
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "confirm">("cart");
+  const [activeSection, setActiveSection] = useState<"bag" | "wishlist">("bag");
+  const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
   
   // State-area selectors for Nigeria
   const [selectedState, setSelectedState] = useState<string>("");
@@ -187,9 +195,129 @@ export default function CartDrawer({
               </span>
             </div>
 
+            {/* Bag / Wishlist Section Toggles */}
+            <div className="flex border-b border-zinc-900 font-mono text-[10px] tracking-wider select-none shrink-0">
+              <button
+                onClick={() => setActiveSection("bag")}
+                className={`flex-1 py-3 text-center border-r border-zinc-900 transition-colors uppercase relative cursor-pointer ${
+                  activeSection === "bag" ? "bg-zinc-950 text-white font-black" : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                <span>BAG ({cartItemsCount})</span>
+                {activeSection === "bag" && (
+                  <div className="absolute bottom-0 inset-x-0 h-0.5 bg-[#EFFF00]" />
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveSection("wishlist");
+                  setCheckoutStep("cart");
+                }}
+                className={`flex-1 py-3 text-center transition-colors uppercase relative cursor-pointer ${
+                  activeSection === "wishlist" ? "bg-zinc-950 text-white font-black" : "text-zinc-500 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center justify-center gap-1.5">
+                  <Heart size={11} fill={wishlist.length > 0 ? "#EFFF00" : "none"} className={wishlist.length > 0 ? "text-[#EFFF00]" : "text-zinc-500"} />
+                  WISHLIST ({wishlist.length})
+                </span>
+                {activeSection === "wishlist" && (
+                  <div className="absolute bottom-0 inset-x-0 h-0.5 bg-[#EFFF00]" />
+                )}
+              </button>
+            </div>
+
             {/* Middle state panel */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              {cart.length === 0 ? (
+              {activeSection === "wishlist" ? (
+                wishlist.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4">
+                    <div className="opacity-15">
+                      <Heart size={60} className="text-zinc-500" />
+                    </div>
+                    <div>
+                      <span className="font-mono text-xs text-zinc-500 block uppercase">
+                        YOUR WISHLIST IS EMPTY
+                      </span>
+                      <p className="text-zinc-500 text-[11px] max-w-xs mt-1.5 font-sans">
+                        Save archive coutures and exclusive custom products directly to your stash to review them here later.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {wishlist.map((product) => {
+                      return (
+                        <div
+                          key={product.id}
+                          className="p-4 border border-zinc-900 bg-black/40 flex justify-between gap-4 items-start relative"
+                        >
+                          {/* Swatch indicator preview */}
+                          <div className="w-16 h-16 bg-zinc-950 border border-zinc-900 flex items-center justify-center relative flex-shrink-0">
+                            <div className="rotate-[12deg] w-10 h-10 select-none">
+                              <GlowCrown
+                                size="100%"
+                                color={product.colors?.[0]?.isYellowTint ? "#000000" : "#EFFF00"}
+                                glow={false}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Detail summary */}
+                          <div className="flex-1 flex flex-col justify-between h-16">
+                            <div>
+                              <h4 className="font-sans font-extrabold text-xs text-white uppercase tracking-tight">
+                                {product.name}
+                              </h4>
+                              <span className="font-mono text-[9px] text-zinc-500 uppercase block mt-0.5">
+                                SKU: {product.sku}
+                              </span>
+                            </div>
+
+                            {/* Core Action handlers (Trash-remove & Cart-push) */}
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => {
+                                  const cartItem: CartItem = {
+                                    id: `std-${product.id}-${product.colors[0]?.name || "Default"}-${product.sizes[0] || "L"}`,
+                                    product,
+                                    selectedColor: product.colors[0],
+                                    selectedSize: product.sizes[0] || "L",
+                                    quantity: 1,
+                                  };
+                                  onAddToCart(cartItem);
+                                }}
+                                className="font-mono text-[9px] font-bold text-[#EFFF00] hover:text-white uppercase transition-colors"
+                              >
+                                [ ADD TO BAG ]
+                              </button>
+
+                              <button
+                                onClick={() => onToggleWishlist(product.id)}
+                                className="text-zinc-650 hover:text-red-400 p-1 transition-colors"
+                                title="Remove Item"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Pricing display */}
+                          <div className="text-right">
+                            <span className="font-mono text-xs font-extrabold block text-white select-all">
+                              ${product.price}
+                            </span>
+                            <span className="text-[9px] font-mono text-[#EFFF00] uppercase">
+                              {product.category}
+                            </span>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : cart.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-20 gap-4">
                   <div className="opacity-15">
                     <GlowCrown size={90} color="#666" glow={false} />
@@ -582,7 +710,7 @@ export default function CartDrawer({
             </div>
 
             {/* Bottom aggregate sums */}
-            {cart.length > 0 && checkoutStep !== "confirm" && (
+            {activeSection === "bag" && cart.length > 0 && checkoutStep !== "confirm" && (
               <div className="p-6 border-t border-zinc-900 bg-black/60 flex flex-col gap-4">
                 <div className="flex flex-col gap-2 font-mono text-xs">
                   <div className="flex justify-between text-zinc-500">

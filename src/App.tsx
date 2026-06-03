@@ -26,6 +26,7 @@ import ProductCard from "./components/ProductCard";
 import Customizer from "./components/Customizer";
 import CartDrawer from "./components/CartDrawer";
 import Lookbook from "./components/Lookbook";
+import ProductDetailPage from "./components/ProductDetailPage";
 
 import { dbService, authService, UserSession, DropTimerConfig } from "./services/firebase";
 import GoogleAuthModal from "./components/GoogleAuthModal";
@@ -37,6 +38,25 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<ProductCat | "All">("All");
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("cactus_bear_wishlist");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleToggleWishlist = (productId: string) => {
+    setWishlist((prev) => {
+      const isAlready = prev.includes(productId);
+      const updated = isAlready ? prev.filter((id) => id !== productId) : [...prev, productId];
+      localStorage.setItem("cactus_bear_wishlist", JSON.stringify(updated));
+      return updated;
+    });
+  };
   
   // Upcoming Drop Countdown states
   const [timerConfig, setTimerConfig] = useState<DropTimerConfig>({
@@ -206,7 +226,7 @@ export default function App() {
 
       {/* PERSISTENT HIGH-END STATIONS HEADER */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-950 px-4 md:px-8 py-4 flex justify-between items-center">
-        <a href="#" className="flex items-center gap-3 group">
+        <a href="#" onClick={() => setSelectedProductId(null)} className="flex items-center gap-3 group">
           <div className="w-12 h-6 rotate-[-15deg] transition-transform group-hover:rotate-[15deg]">
             <GlowCrown size="100%" color="#EFFF00" glow={true} />
           </div>
@@ -217,17 +237,17 @@ export default function App() {
 
         {/* Anchor Quick Jump Bridges */}
         <nav className="hidden md:flex items-center gap-8 font-mono text-[11px] font-semibold tracking-[0.12em] text-zinc-350">
-          <a href="#preset-capsule" className="hover:text-[#EFFF00] transition-colors uppercase">
+          <a href="#preset-capsule" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
             01 / COLLECTION
           </a>
-          <a href="#customizer-lab" className="hover:text-[#EFFF00] transition-colors uppercase flex items-center gap-1.5">
+          <a href="#customizer-lab" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase flex items-center gap-1.5">
             <span className="w-1 rounded-full bg-[#EFFF00] aspect-square animate-pulse" />
             02 / CUSTOMIZER (COMING SOON)
           </a>
-          <a href="#brand-lookbook" className="hover:text-[#EFFF00] transition-colors uppercase">
+          <a href="#brand-lookbook" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
             03 / MANIFESTO
           </a>
-          <a href="#unlocked-terminal" className="hover:text-[#EFFF00] transition-colors uppercase">
+          <a href="#unlocked-terminal" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
             04 / UPCOMING DROP
           </a>
           <button 
@@ -327,28 +347,40 @@ export default function App() {
             <div className="flex flex-col gap-5 font-sans text-base font-black tracking-tight text-zinc-100 uppercase">
               <a
                 href="#preset-capsule"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setSelectedProductId(null);
+                }}
                 className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
               >
                 01 / THE COLLECTION
               </a>
               <a
                 href="#customizer-lab"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setSelectedProductId(null);
+                }}
                 className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-colors block"
               >
                 02 / STUDIO CUSTOMIZER
               </a>
               <a
                 href="#brand-lookbook"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setSelectedProductId(null);
+                }}
                 className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
               >
                 03 / ATELIER MANIFESTO
               </a>
               <a
                 href="#unlocked-terminal"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setSelectedProductId(null);
+                }}
                 className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
               >
                 04 / UPCOMING DROP
@@ -433,8 +465,21 @@ export default function App() {
 
       {/* SECTION 01: HERO LANDING ENVIRONMENT (WORLD-CLASS STREETWEAR PRESENTATION) */}
       <main className="relative z-10 flex-1 flex flex-col">
-        
-        <section className="relative w-full py-28 md:py-40 px-4 flex flex-col items-center justify-center text-center overflow-hidden border-b border-zinc-950">
+        {selectedProductId && productsList.some(p => p.id === selectedProductId) ? (
+          <ProductDetailPage
+            product={productsList.find(p => p.id === selectedProductId)!}
+            allProducts={productsList}
+            onBack={() => setSelectedProductId(null)}
+            onAddToCart={handleAddToCart}
+            onSelectProduct={(productId) => setSelectedProductId(productId)}
+            isWishlisted={wishlist.includes(selectedProductId)}
+            onToggleWishlist={() => handleToggleWishlist(selectedProductId)}
+            currentUser={currentUser}
+            onLoginTrigger={() => setAuthOpen(true)}
+          />
+        ) : (
+          <>
+            <section className="relative w-full py-28 md:py-40 px-4 flex flex-col items-center justify-center text-center overflow-hidden border-b border-zinc-950">
           
           {/* Subtle slow spinning logo banner */}
           <motion.div
@@ -544,6 +589,9 @@ export default function App() {
                   key={prod.id}
                   product={prod}
                   onAddToCart={handleAddToCart}
+                  onSelect={setSelectedProductId}
+                  isWishlisted={wishlist.includes(prod.id)}
+                  onToggleWishlist={() => handleToggleWishlist(prod.id)}
                 />
               ))}
             </div>
@@ -734,7 +782,8 @@ export default function App() {
             </div>
           </div>
         </section>
-
+          </>
+        )}
       </main>
 
       {/* FOOTER: DESIGN STUDIO FOOTER */}
@@ -765,6 +814,9 @@ export default function App() {
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
+        wishlist={productsList.filter((p) => wishlist.includes(p.id))}
+        onToggleWishlist={handleToggleWishlist}
+        onAddToCart={handleAddToCart}
       />
 
       {/* GOOGLE SIGN-IN MODAL */}

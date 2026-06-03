@@ -1,4 +1,4 @@
-import { Product, CartItem } from "../types";
+import { Product, CartItem, Review } from "../types";
 import { CACTUS_BEAR_PRODUCTS } from "../data";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
@@ -56,6 +56,7 @@ const STORAGE_PRODUCTS_KEY = "cactus_bear_dynamic_products";
 const STORAGE_ORDERS_KEY = "cactus_bear_dynamic_orders";
 const STORAGE_SESSION_KEY = "cactus_bear_auth_session";
 const STORAGE_TIMER_KEY = "cactus_bear_timer_config";
+const STORAGE_REVIEWS_KEY = "cactus_bear_dynamic_reviews";
 
 // Detect if Firebase has been provisioned with real credentials
 const isFirebaseConfigured = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== "");
@@ -204,11 +205,49 @@ const getInitialOrders = (): DbOrder[] => {
   return defaultOrders;
 };
 
+const getInitialReviews = (): Review[] => {
+  const saved = localStorage.getItem(STORAGE_REVIEWS_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // JSON issues
+    }
+  }
+  
+  // Seed initial high-quality reviews
+  const defaultReviews: Review[] = [
+    {
+      id: "rev-1",
+      productId: "cb-jersey-01",
+      userId: "user-101",
+      userName: "Alexander K.",
+      userPhoto: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Alexander",
+      rating: 5,
+      comment: "Absolutely premium weight and high-end feel. The custom embroidery detail is outstanding. Extremely satisfied.",
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: "rev-2",
+      productId: "cb-jersey-01",
+      userId: "user-202",
+      userName: "Sophia Thorne",
+      userPhoto: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Sophia",
+      rating: 4,
+      comment: "Beautiful texture and details. Very comfortable and fits perfect.",
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
+  localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(defaultReviews));
+  return defaultReviews;
+};
+
 // Main Database actions class handling BOTH modes natively
 class DatabaseService {
   private localProducts: Product[] = getInitialProducts();
   private localOrders: DbOrder[] = getInitialOrders();
   private localTimer: DropTimerConfig = getInitialTimer();
+  private localReviews: Review[] = getInitialReviews();
 
   // Retrieve products list
   public async getProducts(): Promise<Product[]> {
@@ -252,6 +291,10 @@ class DatabaseService {
     const tSaved = localStorage.getItem(STORAGE_TIMER_KEY);
     if (tSaved) {
       try { this.localTimer = JSON.parse(tSaved); } catch {}
+    }
+    const rSaved = localStorage.getItem(STORAGE_REVIEWS_KEY);
+    if (rSaved) {
+      try { this.localReviews = JSON.parse(rSaved); } catch {}
     }
   }
 
@@ -425,6 +468,54 @@ class DatabaseService {
       order.id === id ? { ...order, status } : order
     );
     localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(this.localOrders));
+  }
+
+  // Reviews Operations
+  public async getReviews(productId: string): Promise<Review[]> {
+    if (isFirebaseConfigured && db) {
+      try {
+        const querySnapshot = await getDocs(collection(db, "reviews"));
+        const list: Review[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const item = docSnap.data() as Review;
+          if (item.productId === productId) {
+            list.push(item);
+          }
+        });
+        return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "reviews");
+      }
+    }
+
+    this.refreshLocal();
+    return this.localReviews
+      .filter((r) => r.productId === productId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  public async addReview(reviewData: Omit<Review, "id" | "createdAt">): Promise<Review> {
+    const reviewId = "rev-" + Math.floor(100000 + Math.random() * 900000).toString();
+    const createdAt = new Date().toISOString();
+    const newReview: Review = {
+      ...reviewData,
+      id: reviewId,
+      createdAt
+    };
+
+    if (isFirebaseConfigured && db) {
+      try {
+        await setDoc(doc(db, "reviews", reviewId), newReview);
+        return newReview;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `reviews/${reviewId}`);
+      }
+    }
+
+    this.refreshLocal();
+    this.localReviews.unshift(newReview);
+    localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(this.localReviews));
+    return newReview;
   }
 }
 

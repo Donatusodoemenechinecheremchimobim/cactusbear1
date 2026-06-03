@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShoppingBag, Eye, Plus, Check } from "lucide-react";
+import { ShoppingBag, Eye, Plus, Check, Heart } from "lucide-react";
 import { Product, CartItem, ApparelColor } from "../types";
 import GlowCrown from "./GlowCrown";
 
@@ -8,9 +8,12 @@ interface ProductCardProps {
   key?: string;
   product: Product;
   onAddToCart: (item: CartItem) => void;
+  onSelect?: (productId: string) => void;
+  isWishlisted: boolean;
+  onToggleWishlist: () => void;
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, onAddToCart, onSelect, isWishlisted, onToggleWishlist }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "L");
   const [selectedColor, setSelectedColor] = useState<ApparelColor>(product.colors[0]);
   const [isHovered, setIsHovered] = useState<boolean>(false);
@@ -33,6 +36,15 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const handleShowDetails = (e: React.MouseEvent) => {
+    if (onSelect) {
+      e.stopPropagation();
+      onSelect(product.id);
+    } else {
+      setDetailedPanel(!detailedPanel);
+    }
+  };
+
   return (
     <div
       onMouseEnter={() => setIsHovered(true)}
@@ -47,9 +59,25 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
       {/* Main product showcase box with responsive heights */}
       <div 
-        onClick={() => setDetailedPanel(!detailedPanel)}
+        onClick={handleShowDetails}
         className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
       >
+        {/* Floating Wishlist Heart Tag */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWishlist();
+          }}
+          className={`absolute top-3 right-3 z-20 w-8 h-8 rounded-none border flex items-center justify-center transition-all cursor-pointer ${
+            isWishlisted 
+              ? "bg-[#EFFF00] border-[#EFFF00] text-black" 
+              : "bg-black/60 border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700"
+          }`}
+          title={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
+        >
+          <Heart size={14} fill={isWishlisted ? "currentColor" : "none"} />
+        </button>
+
         {/* Real-time ambient background glow matching selected product color */}
         <div 
           className="absolute inset-0 filter blur-3xl opacity-20 group-hover:opacity-45 transition-all duration-500 rounded-full w-24 h-24 sm:w-36 sm:h-36 m-auto pointer-events-none"
@@ -350,7 +378,10 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       {/* Info Blocks and purchase commands */}
       <div className="p-4 border-t border-zinc-900 bg-black/60">
         <div className="flex justify-between items-start gap-1">
-          <h3 className="font-sans font-extrabold text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors">
+          <h3 
+            onClick={handleShowDetails}
+            className="font-sans font-extrabold text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer"
+          >
             {product.name}
           </h3>
           <span className="font-mono text-xs font-black text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5">
