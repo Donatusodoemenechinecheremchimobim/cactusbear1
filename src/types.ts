@@ -20,6 +20,7 @@ export interface Product {
   hasBackPrint?: boolean;
   mockupType: "hoodie" | "puffer" | "tee" | "cap";
   imageUrl?: string;
+  stock?: number;
 }
 
 export interface CartItem {

@@ -16,6 +16,7 @@ interface CartDrawerProps {
   wishlist: Product[];
   onToggleWishlist: (productId: string) => void;
   onAddToCart: (item: CartItem) => void;
+  onAddToast?: (msg: string, type: "success" | "info" | "alert") => void;
 }
 
 export default function CartDrawer({
@@ -27,7 +28,8 @@ export default function CartDrawer({
   onClearCart,
   wishlist,
   onToggleWishlist,
-  onAddToCart
+  onAddToCart,
+  onAddToast
 }: CartDrawerProps) {
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "confirm">("cart");
   const [activeSection, setActiveSection] = useState<"bag" | "wishlist">("bag");
@@ -115,6 +117,7 @@ export default function CartDrawer({
       }
 
       setCheckoutStep("confirm");
+      onAddToast?.(`SECURE ORDER RECIEVED // STATUS: ACTIVE // ID: ${savedOrder.id}`, "success");
 
       // Auto-trigger WhatsApp dispatch message directly to the administrator
       const cleanPhoneForWhatsapp = adminWhatsapp.replace(/[^0-9]/g, "");
@@ -139,8 +142,9 @@ export default function CartDrawer({
         window.open(whatsappUrl, "_blank");
       }, 500);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Order creation failed:", err);
+      onAddToast?.(`ORDER DISPATCH REJECTED: ${err?.message || "DATABASE TIMEOUT"}`, "alert");
     } finally {
       setSubmitting(false);
     }

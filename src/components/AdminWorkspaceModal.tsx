@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar } from "lucide-react";
+import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar, Cpu, Terminal, Activity, Link2, RefreshCw } from "lucide-react";
 import { Product, ProductCat, ApparelColor } from "../types";
 import { dbService, DbOrder } from "../services/firebase";
 
@@ -15,7 +15,7 @@ export default function AdminWorkspaceModal({
   onClose,
   onRefreshProducts
 }: AdminWorkspaceModalProps) {
-  const [activeTab, setActiveTab] = useState<"products" | "deliveries" | "timer">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "deliveries" | "timer" | "automation">("products");
 
   // State cache
   const [products, setProducts] = useState<Product[]>([]);
@@ -31,6 +31,235 @@ export default function AdminWorkspaceModal({
   const [tAdminWhatsapp, setTAdminWhatsapp] = useState<string>("2348123456789");
   const [tAdminEmail, setTAdminEmail] = useState<string>("chibundusadiq@gmail.com");
   const [saveConfirmed, setSaveConfirmed] = useState<boolean>(false);
+
+  // Direct Autolink (Make Alternates) Configurations
+  const [webEnabled, setWebEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_webhook_enabled") === "true");
+  const [webUrl, setWebUrl] = useState<string>(() => localStorage.getItem("cactus_bear_autom_webhook_url") || "");
+
+  const [slEnabled, setSlEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_slack_enabled") === "true");
+  const [slUrl, setSlUrl] = useState<string>(() => localStorage.getItem("cactus_bear_autom_slack_url") || "");
+
+  const [dcEnabled, setDcEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_discord_enabled") === "true");
+  const [dcUrl, setDcUrl] = useState<string>(() => localStorage.getItem("cactus_bear_autom_discord_url") || "");
+
+  // Email Notification States
+  const [emailEnabled, setEmailEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_email_enabled") !== "false");
+  const [emailTarget, setEmailTarget] = useState<string>(() => localStorage.getItem("cactus_bear_autom_email_target") || "chibundusadiq@gmail.com");
+  const [emailKey, setEmailKey] = useState<string>(() => localStorage.getItem("cactus_bear_autom_email_key") || "xojzazgo");
+
+  // WhatsApp Notification States
+  const [whatsappEnabled, setWhatsappEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_whatsapp_enabled") === "true");
+  const [whatsappPhone, setWhatsappPhone] = useState<string>(() => localStorage.getItem("cactus_bear_autom_whatsapp_phone") || "2348123456789");
+  const [whatsappApiKey, setWhatsappApiKey] = useState<string>(() => localStorage.getItem("cactus_bear_autom_whatsapp_apikey") || "");
+  const [whatsappWebhook, setWhatsappWebhook] = useState<string>(() => localStorage.getItem("cactus_bear_autom_whatsapp_webhook") || "");
+
+  const [automLogs, setAutomLogs] = useState<any[]>([]);
+
+  // Trigger loading logs whenever the layout is opened / tab changes
+  useEffect(() => {
+    if (isOpen || activeTab === "automation") {
+      try {
+        const loaded = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+        setAutomLogs(loaded);
+      } catch {}
+    }
+  }, [isOpen, activeTab]);
+
+  const handleSaveAutomationConfigs = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem("cactus_bear_autom_webhook_enabled", String(webEnabled));
+    localStorage.setItem("cactus_bear_autom_webhook_url", webUrl.trim());
+    localStorage.setItem("cactus_bear_autom_slack_enabled", String(slEnabled));
+    localStorage.setItem("cactus_bear_autom_slack_url", slUrl.trim());
+    localStorage.setItem("cactus_bear_autom_discord_enabled", String(dcEnabled));
+    localStorage.setItem("cactus_bear_autom_discord_url", dcUrl.trim());
+
+    // Save Email configurations
+    localStorage.setItem("cactus_bear_autom_email_enabled", String(emailEnabled));
+    localStorage.setItem("cactus_bear_autom_email_target", emailTarget.trim());
+    localStorage.setItem("cactus_bear_autom_email_key", emailKey.trim());
+
+    // Save WhatsApp configurations
+    localStorage.setItem("cactus_bear_autom_whatsapp_enabled", String(whatsappEnabled));
+    localStorage.setItem("cactus_bear_autom_whatsapp_phone", whatsappPhone.trim());
+    localStorage.setItem("cactus_bear_autom_whatsapp_apikey", whatsappApiKey.trim());
+    localStorage.setItem("cactus_bear_autom_whatsapp_webhook", whatsappWebhook.trim());
+
+    setSaveConfirmed(true);
+    setTimeout(() => setSaveConfirmed(false), 3000);
+  };
+
+  const handleClearAutomationLogs = () => {
+    localStorage.removeItem("cactus_bear_autom_logs");
+    setAutomLogs([]);
+  };
+
+  const handleTriggerManualTestRun = () => {
+    // Generate mock pre-order payload with streetwear vibes
+    const testOrder = {
+      id: "CB-OR-MOCK-" + Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase(),
+      email: "chibundusadiq@theatelier.com",
+      createdAt: new Date().toISOString(),
+      status: "Processing",
+      totalPrice: 420,
+      items: [
+        { product: { name: "01 // OVERSIZED HOODIE", price: 210, sku: "CB-HD-01" }, selectedSize: "XL", selectedColor: { name: "Obsidian Black", hex: "#0c0c0d" } },
+        { product: { name: "02 // BOXY JERSEY TEE", price: 90, sku: "CB-TE-01" }, selectedSize: "L", selectedColor: { name: "Alabaster White", hex: "#FFFFFF" } }
+      ],
+      shippingAddress: {
+        fullName: "Sadiq Chibundu",
+        city: "Lagos",
+        state: "Lagos State",
+        phone: "+2348123456789",
+        addressLine: "Heir Apparent Studio, 12 Victoria Island"
+      }
+    };
+
+    try {
+      // Save current states first to verify
+      localStorage.setItem("cactus_bear_autom_webhook_enabled", String(webEnabled));
+      localStorage.setItem("cactus_bear_autom_webhook_url", webUrl.trim());
+      localStorage.setItem("cactus_bear_autom_slack_enabled", String(slEnabled));
+      localStorage.setItem("cactus_bear_autom_slack_url", slUrl.trim());
+      localStorage.setItem("cactus_bear_autom_discord_enabled", String(dcEnabled));
+      localStorage.setItem("cactus_bear_autom_discord_url", dcUrl.trim());
+      localStorage.setItem("cactus_bear_autom_email_enabled", String(emailEnabled));
+      localStorage.setItem("cactus_bear_autom_email_target", emailTarget.trim());
+      localStorage.setItem("cactus_bear_autom_email_key", emailKey.trim());
+      localStorage.setItem("cactus_bear_autom_whatsapp_enabled", String(whatsappEnabled));
+      localStorage.setItem("cactus_bear_autom_whatsapp_phone", whatsappPhone.trim());
+      localStorage.setItem("cactus_bear_autom_whatsapp_apikey", whatsappApiKey.trim());
+      localStorage.setItem("cactus_bear_autom_whatsapp_webhook", whatsappWebhook.trim());
+
+      const formattedMessage = 
+        `✦ ATELIER PRE-ORDER MANUALLY INITIATED: ${testOrder.id} ✦\n\n` +
+        `• Customer Pin: ${testOrder.email}\n` +
+        `• Full Name: ${testOrder.shippingAddress.fullName}\n` +
+        `• Mobile: ${testOrder.shippingAddress.phone}\n` +
+        `• Shipping Dest: ${testOrder.shippingAddress.addressLine}, ${testOrder.shippingAddress.city} \n` +
+        `• Transacted Value: ₦${(testOrder.totalPrice * 1500).toLocaleString()} ($${testOrder.totalPrice} USD)\n\n` +
+        `• Core Items:\n` +
+        testOrder.items.map((it, i) => 
+          `  [${i + 1}] ${it.product.name} - Size: ${it.selectedSize} (${it.selectedColor.name})`
+        ).join("\n") +
+        `\n\n✦ CRYPTOGRAPHIC ATELIER LEDGER ✦`;
+
+      const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+      const localTestLog = {
+        id: "log-" + Math.floor(Math.random() * 100000),
+        timestamp: new Date().toISOString(),
+        type: "MANUAL TRIGGER TEST",
+        payload: { orderId: testOrder.id, value: 420 },
+        status: 200,
+        statusText: "Initiating multi-channel test dispatch..."
+      };
+
+      const updated = [localTestLog, ...currentLogs].slice(0, 50);
+      localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updated));
+      setAutomLogs(updated);
+
+      // Now dispatch Email if enabled
+      if (emailEnabled && emailTarget) {
+        const emailEndpoint = `https://formspree.io/f/${emailKey || "xojzazgo"}`;
+        
+        fetch(emailEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            _subject: `✦ MANUAL TEST: CACTUS BEAR PRE-ORDER: ${testOrder.id} ✦`,
+            recipient: emailTarget,
+            message: formattedMessage,
+            orderId: testOrder.id,
+            buyer: testOrder.shippingAddress.fullName,
+            buyerPhone: testOrder.shippingAddress.phone,
+            totalNgn: `₦${(testOrder.totalPrice * 1500).toLocaleString()}`,
+            totalUsd: `$${testOrder.totalPrice}`,
+            itemsOrdered: testOrder.items.map((it) => `${it.product.name} (${it.selectedSize})`).join(", ")
+          })
+        }).catch(() => {});
+      }
+
+      // Dispatch WhatsApp if enabled
+      if (whatsappEnabled && whatsappPhone) {
+        const logEntry = {
+          id: "log-" + Math.floor(Math.random() * 100000),
+          timestamp: new Date().toISOString(),
+          type: "WHATSAPP DISPATCH",
+          payload: { phone: whatsappPhone, orderId: testOrder.id },
+          status: 102,
+          statusText: "Sending WhatsApp Alert..."
+        };
+
+        if (whatsappWebhook) {
+          fetch(whatsappWebhook, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to: whatsappPhone, message: formattedMessage, orderId: testOrder.id })
+          })
+          .then(res => {
+            logEntry.status = res.status;
+            logEntry.statusText = res.ok ? "Custom Hook Posted Successfully" : "Webhook Connection Failed";
+            const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+            const updatedLogs = [logEntry, ...currentLogs.filter((l: any) => l.id !== logEntry.id)].slice(0, 50);
+            localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
+            setAutomLogs(updatedLogs);
+          })
+          .catch(err => {
+            logEntry.status = 503;
+            logEntry.statusText = err?.message || "WhatsApp Webhook Error";
+            const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+            const updatedLogs = [logEntry, ...currentLogs.filter((l: any) => l.id !== logEntry.id)].slice(0, 50);
+            localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
+            setAutomLogs(updatedLogs);
+          });
+        } else if (whatsappApiKey) {
+          const cleanPhone = whatsappPhone.replace(/\D/g, "");
+          const encoded = encodeURIComponent(formattedMessage);
+          fetch(`https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encoded}&apikey=${whatsappApiKey.trim()}`, { mode: "no-cors" })
+          .then(() => {
+            logEntry.status = 200;
+            logEntry.statusText = "Dispatched via CallMeBot Bot Channel";
+            const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+            const updatedLogs = [logEntry, ...currentLogs.filter((l: any) => l.id !== logEntry.id)].slice(0, 50);
+            localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
+            setAutomLogs(updatedLogs);
+          })
+          .catch(err => {
+            logEntry.status = 502;
+            logEntry.statusText = err?.message || "WhatsApp API Request Timeout";
+            const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
+            const updatedLogs = [logEntry, ...currentLogs.filter((l: any) => l.id !== logEntry.id)].slice(0, 50);
+            localStorage.setItem("cactus_bear_autom_logs", JSON.stringify(updatedLogs));
+            setAutomLogs(updatedLogs);
+          });
+        }
+      }
+
+      // Now dispatch the webhooks
+      if (webEnabled && webUrl) {
+        fetch(webUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(testOrder)
+        }).catch(() => {});
+      }
+      if (slEnabled && slUrl) {
+        const slackMessage = `✦ *MANUAL AUTOMATION HUB TEST RUN SUCCESSFUL:* ${testOrder.id} ✦`;
+        fetch(slUrl, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify({ text: slackMessage })
+        }).catch(() => {});
+      }
+      if (dcEnabled && dcUrl) {
+        fetch(dcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: `✦ MANUAL AUTOMATION HUB TEST RUN SUCCESSFUL: ${testOrder.id} ✦` })
+        }).catch(() => {});
+      }
+    } catch (e) {}
+  };
 
   // Form states for creating a new product
   const [pName, setPName] = useState<string>("");
@@ -288,6 +517,16 @@ export default function AdminWorkspaceModal({
                     }`}
                   >
                     UPCOMING DROP
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("automation")}
+                    className={`px-3 sm:px-4 py-2 transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === "automation"
+                        ? "bg-[#EFFF00] text-black font-extrabold"
+                        : "text-zinc-500 hover:text-white"
+                    }`}
+                  >
+                    AUTOMATION HUB
                   </button>
                 </div>
 
@@ -873,6 +1112,316 @@ export default function AdminWorkspaceModal({
                     <div className="mt-4 pt-4 border-t border-zinc-900 text-zinc-500 font-mono text-[9px] flex justify-between">
                       <span>DB_PATH: /drops/active-drop-config</span>
                       <span>STATUS: RECORDING PRE-ENTRIES</span>
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 4: DIRECT AUTOMATIONS HUB (MAKE ALTERNATIVES) */}
+              {activeTab === "automation" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  
+                  {/* Left Column: Direct Connection Endpoints */}
+                  <form onSubmit={handleSaveAutomationConfigs} className="lg:col-span-6 bg-black border border-zinc-900 p-6 flex flex-col gap-5">
+                    <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Cpu size={14} className="text-[#EFFF00]" />
+                        <span className="text-xs font-mono text-[#EFFF00] tracking-widest block uppercase font-bold">
+                          DIRECT INTEGRATION SETTINGS
+                        </span>
+                      </div>
+                      {saveConfirmed && (
+                        <span className="text-[9px] font-mono font-black text-black bg-[#EFFF00] px-2 py-0.5 uppercase tracking-wider">
+                          SAVED LEDGER
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-zinc-550 text-xs font-sans leading-relaxed">
+                      Deploy direct micro-dispatchers to bypass Make.com completely. When new pre-orders are logged in Firestore, the system will fire direct HTTP packets asynchronously.
+                    </p>
+
+                    {/* Webhook Connection */}
+                    <div className="bg-[#080809] border border-zinc-900 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-[10px] text-zinc-300 uppercase font-black tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <Link2 size={12} className="text-[#EFFF00]" />
+                          1. CUSTOM WEBHOOK URL
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={webEnabled}
+                          onChange={(e) => setWebEnabled(e.target.checked)}
+                          className="accent-[#EFFF00] cursor-pointer"
+                        />
+                      </div>
+                      <input
+                        type="url"
+                        value={webUrl}
+                        onChange={(e) => setWebUrl(e.target.value)}
+                        placeholder="https://api.yourdomain.com/v1/preorders"
+                        className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                      />
+                    </div>
+
+                    {/* Slack Channel Connection */}
+                    <div className="bg-[#080809] border border-zinc-900 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-[10px] text-zinc-300 uppercase font-black tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <Activity size={12} className="text-[#EFFF00]" />
+                          2. SLACK INCOMING WEBHOOK
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={slEnabled}
+                          onChange={(e) => setSlEnabled(e.target.checked)}
+                          className="accent-[#EFFF00] cursor-pointer"
+                        />
+                      </div>
+                      <input
+                        type="url"
+                        value={slUrl}
+                        onChange={(e) => setSlUrl(e.target.value)}
+                        placeholder="https://hooks.slack.com/services/T00/B00/X00"
+                        className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                      />
+                    </div>
+
+                    {/* Discord Dispatch Link */}
+                    <div className="bg-[#080809] border border-zinc-900 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-[10px] text-zinc-300 uppercase font-black tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <Terminal size={12} className="text-[#EFFF00]" />
+                          3. DISCORD SERVER WEBHOOK
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={dcEnabled}
+                          onChange={(e) => setDcEnabled(e.target.checked)}
+                          className="accent-[#EFFF00] cursor-pointer"
+                        />
+                      </div>
+                      <input
+                        type="url"
+                        value={dcUrl}
+                        onChange={(e) => setDcUrl(e.target.value)}
+                        placeholder="https://discord.com/api/webhooks/xxxxxx"
+                        className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                      />
+                    </div>
+
+                    {/* Email Alerts Setup */}
+                    <div className="bg-[#080809] border border-zinc-900 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-[10px] text-zinc-300 uppercase font-black tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <Cpu size={12} className="text-[#EFFF00]" />
+                          4. EMAIL ORDERS DISPATCHER
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={emailEnabled}
+                          onChange={(e) => setEmailEnabled(e.target.checked)}
+                          className="accent-[#EFFF00] cursor-pointer"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <span className="block font-mono text-[8px] text-zinc-550 uppercase">TARGET DESTINATION EMAIL</span>
+                        <input
+                          type="email"
+                          value={emailTarget}
+                          onChange={(e) => setEmailTarget(e.target.value)}
+                          placeholder="chibundusadiq@gmail.com"
+                          className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="block font-mono text-[8px] text-zinc-550 uppercase">FORMSPREE TEMPLATE FORM ID (OPTIONAL)</span>
+                        <input
+                          type="text"
+                          value={emailKey}
+                          onChange={(e) => setEmailKey(e.target.value)}
+                          placeholder="mqaeorze"
+                          className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* WhatsApp Alerts Setup */}
+                    <div className="bg-[#080809] border border-zinc-900 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-[10px] text-zinc-300 uppercase font-black tracking-wider flex items-center gap-1.5 cursor-pointer">
+                          <Plus size={12} className="text-[#EFFF00]" />
+                          5. WHATSAPP ALERTS DISPATCHER
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={whatsappEnabled}
+                          onChange={(e) => setWhatsappEnabled(e.target.checked)}
+                          className="accent-[#EFFF00] cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="block font-mono text-[8px] text-zinc-550 uppercase">SADIQ'S WHATSAPP NUMBER (WITH COUNTRY CODE - NO "+" E.G. 2348123456789)</span>
+                        <input
+                          type="text"
+                          value={whatsappPhone}
+                          onChange={(e) => setWhatsappPhone(e.target.value)}
+                          placeholder="2348123456789"
+                          className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <span className="block font-mono text-[8px] text-zinc-550 uppercase">CALLMEBOT API KEY</span>
+                          <input
+                            type="text"
+                            value={whatsappApiKey}
+                            onChange={(e) => setWhatsappApiKey(e.target.value)}
+                            placeholder="e.g. 783267"
+                            className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="block font-mono text-[8px] text-zinc-550 uppercase">OR CUSTOM WHATSAPP WEBHOOK</span>
+                          <input
+                            type="url"
+                            value={whatsappWebhook}
+                            onChange={(e) => setWhatsappWebhook(e.target.value)}
+                            placeholder="https://yourtwilio.com"
+                            className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-[9.5px] font-mono text-zinc-400 bg-black/60 border border-zinc-900 p-3 leading-relaxed uppercase space-y-2.5">
+                        <span className="text-[#EFFF00] font-black block tracking-wider">💡 DYNAMIC WHATSAPP ACTIVATION INSTRUCTIONS:</span>
+                        <p className="text-zinc-500 normal-case">
+                          If CallMeBot didn't respond, one of their server channels may be offline or heavily loaded. Click any active link below to instantly open WhatsApp pre-filled with the activation message:
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <a
+                            href="https://wa.me/34644202086?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-zinc-900 hover:bg-[#EFFF00] hover:text-black text-white px-2 py-1 text-[8px] font-bold border border-zinc-800 transition-all uppercase"
+                          >
+                            ⚡ Server 1 (+34 644 202 086)
+                          </a>
+                          <a
+                            href="https://wa.me/34644105511?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-zinc-900 hover:bg-[#EFFF00] hover:text-black text-white px-2 py-1 text-[8px] font-bold border border-zinc-800 transition-all uppercase"
+                          >
+                            ⚡ Server 2 (+34 644 105 511)
+                          </a>
+                          <a
+                            href="https://wa.me/34621073433?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-zinc-900 hover:bg-[#EFFF00] hover:text-black text-white px-2 py-1 text-[8px] font-bold border border-zinc-800 transition-all uppercase"
+                          >
+                            ⚡ Server 3 (+34 621 073 433)
+                          </a>
+                        </div>
+                        <div className="text-zinc-500 space-y-1 pt-1 border-t border-zinc-900/40">
+                          <p>1. Click one of the servers above & send the pre-filled text.</p>
+                          <p>2. Keep WhatsApp open — Wait up to 120 seconds to receive your API key.</p>
+                          <p>3. Copy the numeric key received, paste it into the "CallMeBot API Key" field above and click "COMMIT AUTOMATION ENDPOINTS"!</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#EFFF00] hover:bg-yellow-400 text-black font-mono font-black text-xs py-3.5 uppercase tracking-widest transition-colors cursor-pointer"
+                    >
+                      COMMIT AUTOMATION ENDPOINTS
+                    </button>
+                  </form>
+
+                  {/* Right Column: Console terminal */}
+                  <div className="lg:col-span-6 bg-[#0b0b0c] border border-zinc-900 p-6 flex flex-col justify-between min-h-[500px]">
+                    <div>
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+                        <div>
+                          <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block uppercase mb-1">
+                            ✦ DISPATCH RUNTIME SYSTEM
+                          </span>
+                          <h3 className="text-xl font-sans font-black text-white uppercase tracking-tight">
+                            INTEGRATION CONSOLE
+                          </h3>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleClearAutomationLogs}
+                            className="bg-black border border-zinc-900 hover:border-zinc-700 text-zinc-400 hover:text-white font-mono text-[9px] px-3 py-1.5 uppercase transition-colors"
+                          >
+                            CLEAR LOGS
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleTriggerManualTestRun}
+                            className="bg-zinc-900 border border-[#EFFF00]/30 hover:border-[#EFFF00] text-[#EFFF00] font-mono text-[9px] px-3.5 py-1.5 uppercase tracking-wider transition-all cursor-pointer font-bold"
+                          >
+                            TEST DISPATCH TICK
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 space-y-3">
+                        <span className="block font-mono text-[9px] text-zinc-455 uppercase tracking-widest">
+                          RECENT TRIGGERED LOOPS ({automLogs.length})
+                        </span>
+
+                        <div className="flex flex-col gap-2 max-h-[290px] overflow-y-auto pr-1">
+                          {automLogs.length === 0 ? (
+                            <div className="text-center py-16 border border-dashed border-zinc-900 text-zinc-550 font-mono text-[10px] uppercase">
+                              NO AUTOMATED EVENTS RECORDED
+                            </div>
+                          ) : (
+                            automLogs.map((lg: any) => (
+                              <div key={lg.id} className="bg-black border border-zinc-900/80 p-3.5 font-mono text-[11px] space-y-1.5">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
+                                    <span className="text-zinc-200 font-bold uppercase">{lg.type}</span>
+                                  </div>
+                                  <span className={`text-[9.5px] border px-1.5 py-0.5 rounded-none font-bold ${
+                                    lg.status >= 200 && lg.status < 300
+                                      ? "text-[#EFFF00] border-[#EFFF00]/20 bg-[#EFFF00]/5"
+                                      : "text-rose-450 border-rose-500/20 bg-rose-950/20"
+                                  }`}>
+                                    {lg.status} • {lg.statusText}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 text-[9px] text-[#A0A0A5]">
+                                  <span>TIME: {new Date(lg.timestamp).toLocaleTimeString()}</span>
+                                  <span className="text-right truncate select-all">{lg.id}</span>
+                                </div>
+                                {lg.payload && (
+                                  <div className="bg-[#060607] border border-zinc-950 p-2 text-[9px] text-[#A0A0A5] max-h-[60px] overflow-hidden select-all font-mono">
+                                    {JSON.stringify(lg.payload)}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-zinc-900 text-zinc-500 font-mono text-[9px] flex justify-between items-center uppercase font-bold">
+                      <span>AUTOMATION SYSTEM STATE: LISTENING</span>
+                      <span className="text-[#EFFF00] animate-pulse">● DIRECT LEVERAGE</span>
                     </div>
 
                   </div>

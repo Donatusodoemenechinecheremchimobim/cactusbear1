@@ -21,7 +21,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
       { name: "Olive Sagewood Camo", hex: "#4a5a41", bgHex: "linear-gradient(135deg, #586f52 0%, #2b3a1a 100%)" },
       { name: "Shadow Obsidian Camo", hex: "#1c1c1e", bgHex: "linear-gradient(135deg, #2c2c2e 0%, #0c0c0d 100%)" }
     ],
-    mockupType: "tee"
+    mockupType: "tee",
+    stock: 3
   },
   {
     id: "cb-buttonup-02",
@@ -42,7 +43,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
       { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b" }
     ],
-    mockupType: "tee"
+    mockupType: "tee",
+    stock: 12
   },
   {
     id: "cb-crop-03",
@@ -63,7 +65,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
       { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
       { name: "Bleach White", hex: "#f8f9fa", bgHex: "#f8f9fa" }
     ],
-    mockupType: "tee"
+    mockupType: "tee",
+    stock: 4
   },
   {
     id: "cb-sweatshirt-04",
@@ -85,7 +88,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
       { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b" },
       { name: "Alpine Forest Green", hex: "#1b3524", bgHex: "#1b3524" }
     ],
-    mockupType: "hoodie"
+    mockupType: "hoodie",
+    stock: 15
   },
   {
     id: "cb-trucker-05",
@@ -107,7 +111,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
       { name: "Charcoal Grey Snapback", hex: "#4d4d54", bgHex: "#4d4d54" },
       { name: "Tobacco Brown Snapback", hex: "#8a5d3b", bgHex: "#8a5d3b" }
     ],
-    mockupType: "cap"
+    mockupType: "cap",
+    stock: 2
   }
 ];
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ShoppingBag,
@@ -16,22 +16,25 @@ import {
   Menu,
   X,
   Clock,
-  Package
+  Package,
+  Search
 } from "lucide-react";
 
 import { CartItem, ProductCat } from "./types";
 import { DROPS_TIMELINE } from "./data";
 import GlowCrown from "./components/GlowCrown";
-import ProductCard from "./components/ProductCard";
+import ProductCard, { ProductCardSkeleton } from "./components/ProductCard";
 import Customizer from "./components/Customizer";
 import CartDrawer from "./components/CartDrawer";
 import Lookbook from "./components/Lookbook";
 import ProductDetailPage from "./components/ProductDetailPage";
+import CollectionPage from "./components/CollectionPage";
 
 import { dbService, authService, UserSession, DropTimerConfig } from "./services/firebase";
 import GoogleAuthModal from "./components/GoogleAuthModal";
 import AdminWorkspaceModal from "./components/AdminWorkspaceModal";
 import OrdersLookupModal from "./components/OrdersLookupModal";
+import OrderHistoryModal from "./components/OrderHistoryModal";
 
 export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -39,32 +42,28 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<ProductCat | "All">("All");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [headerSearchQuery, setHeaderSearchQuery] = useState<string>("");
   
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem("cactus_bear_wishlist");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [activePage, setActivePage] = useState<"home" | "collection">("home");
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "alert"; timestamp: string }[]>([]);
 
-  const handleToggleWishlist = (productId: string) => {
-    setWishlist((prev) => {
-      const isAlready = prev.includes(productId);
-      const updated = isAlready ? prev.filter((id) => id !== productId) : [...prev, productId];
-      localStorage.setItem("cactus_bear_wishlist", JSON.stringify(updated));
-      return updated;
-    });
+  const addToast = (message: string, type: "success" | "info" | "alert" = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setToasts((prev) => [...prev, { id, message, type, timestamp }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
   };
+  
   
   // Upcoming Drop Countdown states
   const [timerConfig, setTimerConfig] = useState<DropTimerConfig>({
     id: "active-drop-config",
-    heading: "SÉRIE INCOMING // JULY SPECIALIST",
-    subheading: "THE SAGE THORN DOUBLE-PLEAT PARACHUTE CARGOS",
+    heading: "NEW JULY COLLECTION DROP",
+    subheading: "SAGE THORN COTTON CARGO PANTS",
     targetDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-    description: "Premium heavy-dyed dual structured ripstop pants featuring our signature crown detailing.",
+    description: "Premium heavy cotton ripstop pants featuring vintage crown stitch detail.",
     isActivated: true,
     notifyEmails: []
   });
@@ -75,12 +74,37 @@ export default function App() {
 
   // Auth, products and Admin Workspace modal states
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [wishlist, setWishlist] = useState<string[]>([]);
   const [authOpen, setAuthOpen] = useState<boolean>(false);
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
-  const [ordersLookupOpen, setOrdersLookupOpen] = useState<boolean>(false);
+   const [ordersLookupOpen, setOrdersLookupOpen] = useState<boolean>(false);
+   const [orderHistoryOpen, setOrderHistoryOpen] = useState<boolean>(false);
   const [productsList, setProductsList] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState<boolean>(true);
+
+  const handleToggleWishlist = (productId: string) => {
+    setWishlist((prev) => {
+      const isAlready = prev.includes(productId);
+      const updated = isAlready ? prev.filter((id) => id !== productId) : [...prev, productId];
+      localStorage.setItem("cactus_bear_wishlist", JSON.stringify(updated));
+      
+      const prod = productsList.find((p) => p.id === productId);
+      const prodName = prod ? prod.name : "ITEM";
+      if (isAlready) {
+        addToast(`REMOVED: ${prodName.toUpperCase()}`, "info");
+      } else {
+        addToast(`SAVED TO WISHLIST: ${prodName.toUpperCase()}`, "success");
+      }
+
+      if (currentUser) {
+        dbService.saveUserWishlist(currentUser.uid, updated).catch(err => console.error("Wishlist sync failed", err));
+      }
+      return updated;
+    });
+  };
 
   const refreshDynamicProducts = async () => {
+    setProductsLoading(true);
     try {
       const pList = await dbService.getProducts();
       setProductsList(pList);
@@ -88,6 +112,8 @@ export default function App() {
       setTimerConfig(tConf);
     } catch (e) {
       console.error("Failed to load products/timer:", e);
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -123,29 +149,74 @@ export default function App() {
     return () => clearInterval(interval);
   }, [timerConfig.targetDate]);
 
-  // Load cart and auth on startup
+  // Load cart and auth on startup with database synchronization
   useEffect(() => {
     refreshDynamicProducts();
-    const savedCart = localStorage.getItem("cactus_bear_cart");
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Cart retrieval failed", e);
-      }
-    }
     
-    // Check auth session
-    const session = authService.getSession();
-    if (session) {
+    // Subscribe to Firebase Auth (or active simulation config)
+    const unsubscribeAuth = authService.subscribe(async (session) => {
       setCurrentUser(session);
-    }
+      if (session) {
+        try {
+          // User-specific isolated cart from of user database profile
+          const dbCart = await dbService.loadUserCart(session.uid);
+          if (dbCart && dbCart.length > 0) {
+            setCart(dbCart);
+            localStorage.setItem("cactus_bear_cart", JSON.stringify(dbCart));
+          } else {
+            const savedCart = localStorage.getItem("cactus_bear_cart");
+            if (savedCart) {
+              const parsed = JSON.parse(savedCart);
+              if (parsed.length > 0) {
+                await dbService.saveUserCart(session.uid, parsed);
+              }
+            }
+          }
+
+          // User-specific isolated wishlist from user database profile
+          const dbWishlist = await dbService.loadUserWishlist(session.uid);
+          if (dbWishlist && dbWishlist.length > 0) {
+            setWishlist(dbWishlist);
+            localStorage.setItem("cactus_bear_wishlist", JSON.stringify(dbWishlist));
+          } else {
+            const savedWishlist = localStorage.getItem("cactus_bear_wishlist");
+            if (savedWishlist) {
+              const parsed = JSON.parse(savedWishlist);
+              if (parsed.length > 0) {
+                await dbService.saveUserWishlist(session.uid, parsed);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load user-scoped database values:", err);
+        }
+      } else {
+        // Guest mode fallback load values
+        const savedCart = localStorage.getItem("cactus_bear_cart");
+        if (savedCart) {
+          try { setCart(JSON.parse(savedCart)); } catch {}
+        }
+        const savedWishlist = localStorage.getItem("cactus_bear_wishlist");
+        if (savedWishlist) {
+          try { setWishlist(JSON.parse(savedWishlist)); } catch {}
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+    };
   }, []);
 
   // Sync state helpers
   const syncCart = (updated: CartItem[]) => {
     setCart(updated);
     localStorage.setItem("cactus_bear_cart", JSON.stringify(updated));
+    if (currentUser) {
+      dbService.saveUserCart(currentUser.uid, updated).catch((err) =>
+        console.error("Cart sync failed", err)
+      );
+    }
   };
 
   const handleAddToCart = (item: CartItem) => {
@@ -157,6 +228,10 @@ export default function App() {
     } else {
       syncCart([...cart, item]);
     }
+    
+    const garName = (item.product.name || "GARMENT").toUpperCase();
+    addToast(`ADDED TO BAG: ${garName} (SIZE ${item.selectedSize})`, "success");
+
     // Auto-open cart on additions
     setCartOpen(true);
   };
@@ -195,21 +270,47 @@ export default function App() {
       if (isNew) {
         setAlertSubscribed(true);
         setAlertFormEmail("");
+        addToast(`SUBSCRIBED SUCCESSFULLY FOR UPDATES`, "success");
         await refreshDynamicProducts();
       } else {
-        setAlertError("Patron verification: You are already subscribed to the upcoming release!");
+        setAlertError("You are already subscribed to the upcoming release!");
+        addToast(`YOU ARE ALREADY SUBSCRIBED`, "info");
       }
     } catch (err) {
-      setAlertError("Database connection timed out. Please try again.");
+      setAlertError("Connection check timed out. Please try again.");
+      addToast(`CONNECTION ERROR. PLEASE TRY AGAIN.`, "alert");
     } finally {
       setAlertSubmitting(false);
     }
   };
 
+  const handleNavToSection = (sectionId: string) => {
+    setSelectedProductId(null);
+    setActivePage("home");
+    setTimeout(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 120);
+  };
+
   // Filter Catalog Presets
-  const filteredProducts = selectedCategory === "All"
-    ? productsList
-    : productsList.filter((p) => p.category === selectedCategory);
+  const filteredProducts = useMemo(() => {
+    let result = productsList;
+    if (selectedCategory !== "All") {
+      result = result.filter((p) => p.category === selectedCategory);
+    }
+    if (headerSearchQuery.trim() !== "") {
+      const q = headerSearchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [productsList, selectedCategory, headerSearchQuery]);
 
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
@@ -226,7 +327,15 @@ export default function App() {
 
       {/* PERSISTENT HIGH-END STATIONS HEADER */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-950 px-4 md:px-8 py-4 flex justify-between items-center">
-        <a href="#" onClick={() => setSelectedProductId(null)} className="flex items-center gap-3 group">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            setSelectedProductId(null);
+            setActivePage("home");
+          }}
+          className="flex items-center gap-3 group"
+        >
           <div className="w-12 h-6 rotate-[-15deg] transition-transform group-hover:rotate-[15deg]">
             <GlowCrown size="100%" color="#EFFF00" glow={true} />
           </div>
@@ -237,40 +346,104 @@ export default function App() {
 
         {/* Anchor Quick Jump Bridges */}
         <nav className="hidden md:flex items-center gap-8 font-mono text-[11px] font-semibold tracking-[0.12em] text-zinc-350">
-          <a href="#preset-capsule" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
-            01 / COLLECTION
-          </a>
-          <a href="#customizer-lab" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              setSelectedProductId(null);
+              setActivePage("home");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
+              activePage === "home" ? "text-zinc-100 font-bold" : ""
+            }`}
+          >
+            HOME
+          </button>
+          <button
+            onClick={() => {
+              setSelectedProductId(null);
+              setActivePage("collection");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
+              activePage === "collection" ? "text-[#EFFF00] font-bold" : ""
+            }`}
+          >
+            SHOP CATALOG
+          </button>
+          <button
+            onClick={() => handleNavToSection("customizer-lab")}
+            className="hover:text-[#EFFF00] transition-colors uppercase flex items-center gap-1.5 cursor-pointer"
+          >
             <span className="w-1 rounded-full bg-[#EFFF00] aspect-square animate-pulse" />
-            02 / CUSTOMIZER (COMING SOON)
-          </a>
-          <a href="#brand-lookbook" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
-            03 / MANIFESTO
-          </a>
-          <a href="#unlocked-terminal" onClick={() => setSelectedProductId(null)} className="hover:text-[#EFFF00] transition-colors uppercase">
-            04 / UPCOMING DROP
-          </a>
+            STITCH LAB
+          </button>
+          <button
+            onClick={() => handleNavToSection("brand-lookbook")}
+            className="hover:text-[#EFFF00] transition-colors uppercase cursor-pointer"
+          >
+            OUR STORY
+          </button>
+          <button
+            onClick={() => handleNavToSection("unlocked-terminal")}
+            className="hover:text-[#EFFF00] transition-colors uppercase cursor-pointer"
+          >
+            UPCOMING DROP
+          </button>
           <button 
             onClick={() => setOrdersLookupOpen(true)}
             className="hover:text-[#EFFF00] transition-colors uppercase font-mono text-[11px] font-semibold tracking-[0.12em] text-zinc-350 cursor-pointer text-left"
           >
-            05 / TRACK ORDER
+            TRACK ORDER
           </button>
         </nav>
 
          {/* Navigation Actions and login buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Seek & Search Catalog Bar */}
+          <div className="relative flex items-center w-32 sm:w-40 border border-zinc-900 bg-zinc-950 py-1.5 px-2.5 transition-all focus-within:border-[#EFFF00]">
+            <Search size={11} className="text-zinc-600 mr-1.5 flex-shrink-0" />
+            <input
+              type="text"
+              value={headerSearchQuery}
+              onChange={(e) => {
+                setHeaderSearchQuery(e.target.value);
+                if (selectedProductId) {
+                  setSelectedProductId(null);
+                }
+              }}
+              placeholder="SEARCH CATALOGUE"
+              className="w-full bg-transparent font-mono text-[9px] uppercase tracking-[0.1em] text-white placeholder-zinc-700 outline-none"
+            />
+            {headerSearchQuery && (
+              <button
+                onClick={() => setHeaderSearchQuery("")}
+                className="text-zinc-500 hover:text-white p-0.5 ml-1 flex-shrink-0 cursor-pointer"
+              >
+                <X size={10} />
+              </button>
+            )}
+          </div>
+
           {currentUser ? (
             <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-900 px-3 py-1 text-xs">
-              <img
-                src={currentUser.photoURL}
-                alt={currentUser.displayName}
-                className="w-5 h-5 rounded-full border border-[#EFFF00]/30"
-                referrerPolicy="no-referrer"
-              />
-              <span className="font-mono text-[9px] text-zinc-400 hidden sm:inline uppercase">
-                {currentUser.displayName}
-              </span>
+              <button
+                onClick={() => setOrderHistoryOpen(true)}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                title="Inspect account purchase logs"
+              >
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.displayName}
+                  className="w-5 h-5 rounded-full border border-[#EFFF00]/30"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="font-mono text-[9px] text-zinc-400 hidden sm:inline uppercase hover:text-white transition-colors">
+                  {currentUser.displayName}
+                </span>
+                <span className="text-[#EFFF00] font-mono text-[9px] uppercase tracking-wider pl-2 border-l border-zinc-900 cursor-pointer">
+                  [ LEDGER ]
+                </span>
+              </button>
               
               {currentUser.isAdmin && (
                 <button
@@ -342,58 +515,79 @@ export default function App() {
             className="fixed inset-x-0 top-[65px] z-30 bg-black/98 border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg max-h-[calc(100vh-65px)] overflow-y-auto"
           >
             <span className="text-[9px] font-mono text-zinc-500 tracking-[0.3em] uppercase block border-b border-zinc-950 pb-2">
-              ✦ STUDIO ATELIER DIRECTORY
+              ✦ NAVIGATE SHOP
             </span>
             <div className="flex flex-col gap-5 font-sans text-base font-black tracking-tight text-zinc-100 uppercase">
-              <a
-                href="#preset-capsule"
+              <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
+                  setActivePage("home");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
+                className={`hover:text-[#EFFF00] text-left transition-all block ${activePage === "home" ? "text-[#EFFF00]" : ""}`}
               >
-                01 / THE COLLECTION
-              </a>
-              <a
-                href="#customizer-lab"
+                HOME
+              </button>
+              <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
+                  setActivePage("collection");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-colors block"
+                className={`hover:text-[#EFFF00] text-left transition-all block ${activePage === "collection" ? "text-[#EFFF00]" : ""}`}
               >
-                02 / STUDIO CUSTOMIZER
-              </a>
-              <a
-                href="#brand-lookbook"
+                SHOP CATALOG
+              </button>
+              <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  setSelectedProductId(null);
+                  handleNavToSection("customizer-lab");
                 }}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
+                className="hover:text-[#EFFF00] text-left transition-colors block cursor-pointer"
               >
-                03 / ATELIER MANIFESTO
-              </a>
-              <a
-                href="#unlocked-terminal"
+                CUSTOMIZER
+              </button>
+              <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  setSelectedProductId(null);
+                  handleNavToSection("brand-lookbook");
                 }}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all block"
+                className="hover:text-[#EFFF00] text-left transition-all block cursor-pointer"
               >
-                04 / UPCOMING DROP
-              </a>
+                OUR STORY
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleNavToSection("unlocked-terminal");
+                }}
+                className="hover:text-[#EFFF00] text-left transition-all block cursor-pointer"
+              >
+                UPCOMING DROP
+              </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setOrdersLookupOpen(true);
                 }}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] text-left transition-all block font-sans text-base font-black tracking-tight text-zinc-100 uppercase cursor-pointer"
+                className="hover:text-[#EFFF00] text-left transition-all block font-sans text-base font-black tracking-tight text-zinc-100 uppercase cursor-pointer"
               >
-                05 / TRACK PRE-ORDERS
+                TRACK ORDER
               </button>
+              
+              {currentUser && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setOrderHistoryOpen(true);
+                  }}
+                  className="hover:text-[#EFFF00] text-left transition-all block font-sans text-base font-black tracking-tight text-[#EFFF00] uppercase cursor-pointer"
+                >
+                  ORDER HISTORY
+                </button>
+              )}
             </div>
 
             {/* Mobile Session Actions Shortcut */}
@@ -477,6 +671,18 @@ export default function App() {
             currentUser={currentUser}
             onLoginTrigger={() => setAuthOpen(true)}
           />
+        ) : activePage === "collection" ? (
+          <CollectionPage
+            productsList={productsList}
+            onAddToCart={handleAddToCart}
+            onSelectProduct={(productId) => setSelectedProductId(productId)}
+            wishlist={wishlist}
+            onToggleWishlist={handleToggleWishlist}
+            onBack={() => setActivePage("home")}
+            searchQuery={headerSearchQuery}
+            onSearchQueryChange={setHeaderSearchQuery}
+            productsLoading={productsLoading}
+          />
         ) : (
           <>
             <section className="relative w-full py-28 md:py-40 px-4 flex flex-col items-center justify-center text-center overflow-hidden border-b border-zinc-950">
@@ -508,7 +714,7 @@ export default function App() {
               transition={{ delay: 0.4 }}
               className="text-zinc-400 font-mono text-xs tracking-[0.22em] h-5 mb-8 text-[#EFFF00] uppercase mt-5"
             >
-              HEAVYWEIGHT INDUSTRIAL SPECIFICATIONS // NIGERIAN ATELIER
+              PREMIUM STREETWEAR DESIGNED IN NIGERIA
             </motion.p>
 
             <motion.div
@@ -517,26 +723,30 @@ export default function App() {
               transition={{ delay: 0.6 }}
               className="flex flex-col sm:flex-row items-center gap-4 mt-2"
             >
-              <a
-                href="#preset-capsule"
-                className="bg-[#EFFF00] hover:bg-white text-black font-mono font-black py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase flex items-center gap-2"
+              <button
+                onClick={() => {
+                  setSelectedProductId(null);
+                  setActivePage("collection");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="bg-[#EFFF00] hover:bg-white text-black font-mono font-black py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase flex items-center gap-2 cursor-pointer"
               >
                 EXPLORE COLLECTION '01
                 <ChevronRight size={13} />
-              </a>
+              </button>
 
-              <a
-                href="#customizer-lab"
-                className="bg-transparent border border-zinc-800 hover:border-[#EFFF00] font-mono hover:text-[#EFFF00] py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase"
+              <button
+                onClick={() => handleNavToSection("customizer-lab")}
+                className="bg-transparent border border-zinc-800 hover:border-[#EFFF00] font-mono hover:text-[#EFFF00] py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase cursor-pointer"
               >
-                STUDIO DESIGN CUSTOMIZER
-              </a>
+                CUSTOM DESIGN LAB
+              </button>
             </motion.div>
           </div>
 
           {/* Scroll anchor bridge */}
           <div className="absolute bottom-6 flex flex-col items-center justify-center font-mono text-[9px] text-zinc-650 tracking-widest">
-            <span className="uppercase block mb-1">PULL DOWN FOR CATALOGUE</span>
+            <span className="uppercase block mb-1">SCROLL DOWN TO SHOP</span>
             <ArrowDown size={10} className="animate-bounce text-[#EFFF00]" />
           </div>
         </section>
@@ -549,13 +759,13 @@ export default function App() {
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
               <div>
                 <span className="text-[#EFFF00] font-mono text-xs tracking-widest block uppercase font-semibold mb-1">
-                  [ CATALOGUE_BASE // DROP_01 ]
+                  [ NEW ARRIVALS ]
                 </span>
                 <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase text-white">
-                  THE PRESET <span className="text-zinc-800">VAULT</span>
+                  SHOP THE <span className="text-zinc-800">COLLECTION</span>
                 </h2>
                 <p className="text-zinc-550 text-xs mt-1.5 max-w-md">
-                  Browse immediate numbered fabric runs. Prepared from heavy pre-shrunk organic weaves. Complete with high-contrast crown seals.
+                  Explore high-quality streetwear crafted from premium organic cotton, designed for comfort and durability.
                 </p>
               </div>
 
@@ -582,19 +792,42 @@ export default function App() {
               </div>
             </div>
 
-            {/* Core Products Grid mapping with dense 2-column layout for mobile */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {filteredProducts.map((prod) => (
-                <ProductCard
-                  key={prod.id}
-                  product={prod}
-                  onAddToCart={handleAddToCart}
-                  onSelect={setSelectedProductId}
-                  isWishlisted={wishlist.includes(prod.id)}
-                  onToggleWishlist={() => handleToggleWishlist(prod.id)}
-                />
-              ))}
-            </div>
+             {/* Core Products Grid mapping with dense 2-column layout for mobile */}
+            {productsLoading ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <ProductCardSkeleton key={`skel-home-${idx}`} />
+                ))}
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                {filteredProducts.map((prod) => (
+                  <ProductCard
+                    key={prod.id}
+                    product={prod}
+                    onAddToCart={handleAddToCart}
+                    onSelect={setSelectedProductId}
+                    isWishlisted={wishlist.includes(prod.id)}
+                    onToggleWishlist={() => handleToggleWishlist(prod.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="w-full bg-[#050505] border border-zinc-900 py-16 px-4 text-center flex flex-col items-center justify-center gap-4">
+                <span className="text-[#EFFF00] font-mono text-[10px] tracking-widest uppercase font-black animate-pulse">
+                  [ NO PRODUCTS FOUND ]
+                </span>
+                <p className="text-zinc-500 font-mono text-xs max-w-sm leading-relaxed">
+                  No items match "{headerSearchQuery}". Try adjusting your keywords.
+                </p>
+                <button
+                  onClick={() => setHeaderSearchQuery("")}
+                  className="font-mono text-[10px] tracking-widest bg-zinc-950 border border-zinc-800 hover:border-[#EFFF00] px-4 py-2 uppercase hover:text-[#EFFF00] transition-colors cursor-pointer"
+                >
+                  [ RESET SEARCH ]
+                </button>
+              </div>
+            )}
 
           </div>
         </section>
@@ -793,8 +1026,8 @@ export default function App() {
           {/* Trademark details */}
           <div className="flex flex-col gap-2">
             <span className="font-sans font-black text-white text-sm tracking-wider uppercase">[ CACTUS BEAR ]</span>
-            <span>HEAVYWEIGHT INDUSTRIAL SPECIFICATIONS</span>
-            <span>LAGOS & YABA EXP-DESIGN ATELIER, NIGERIA</span>
+            <span>HEAVYWEIGHT COTTON STREETWEAR</span>
+            <span>LAGOS & YABA DESIGNS, NIGERIA</span>
           </div>
 
           <div className="flex flex-col md:items-end gap-1 text-zinc-500">
@@ -817,6 +1050,7 @@ export default function App() {
         wishlist={productsList.filter((p) => wishlist.includes(p.id))}
         onToggleWishlist={handleToggleWishlist}
         onAddToCart={handleAddToCart}
+        onAddToast={addToast}
       />
 
       {/* GOOGLE SIGN-IN MODAL */}
@@ -825,6 +1059,7 @@ export default function App() {
         onClose={() => setAuthOpen(false)}
         onLoginSuccess={(session) => {
           setCurrentUser(session);
+          addToast(`PATRON ACCESS AUTHORIZED // WELCOME RETURNING CREW: ${session.displayName.toUpperCase()}`, "success");
         }}
       />
 
@@ -832,6 +1067,13 @@ export default function App() {
       <OrdersLookupModal
         isOpen={ordersLookupOpen}
         onClose={() => setOrdersLookupOpen(false)}
+        currentUser={currentUser}
+      />
+
+      {/* ACCOUNT BOUND ORDER HISTORY LEDGER */}
+      <OrderHistoryModal
+        isOpen={orderHistoryOpen}
+        onClose={() => setOrderHistoryOpen(false)}
         currentUser={currentUser}
       />
 
@@ -843,6 +1085,59 @@ export default function App() {
           onRefreshProducts={refreshDynamicProducts}
         />
       )}
+
+      {/* TOASTS STACK INTERACTIVE CONTAINER */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: 30, scale: 0.9, x: 20 }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.95, x: 50, transition: { duration: 0.2 } }}
+              className="pointer-events-auto bg-[#080809] border border-zinc-800 p-4 shadow-[0_12px_24px_rgba(0,0,0,0.85)] backdrop-blur-md relative overflow-hidden"
+            >
+              {/* Left sidebar color bar indication */}
+              <div
+                className={`absolute top-0 left-0 bottom-0 w-1 ${
+                  toast.type === "success" ? "bg-[#EFFF00]" : toast.type === "alert" ? "bg-red-500" : "bg-cyan-400"
+                }`}
+              />
+
+              <div className="flex items-start justify-between gap-3 pl-2">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1 gap-4">
+                    <span className="font-mono text-[8px] text-zinc-550 tracking-wider">
+                      SYSTEM MESSAGE // {toast.timestamp}
+                    </span>
+                    <span
+                      className={`font-mono text-[7px] px-1 py-0.5 uppercase tracking-widest font-black ${
+                        toast.type === "success"
+                          ? "bg-[#161607] text-[#EFFF00]"
+                          : toast.type === "alert"
+                          ? "bg-red-950/40 text-red-400"
+                          : "bg-cyan-950/40 text-cyan-400"
+                      }`}
+                    >
+                      {toast.type}
+                    </span>
+                  </div>
+                  <p className="font-sans text-[11px] text-zinc-100 uppercase tracking-tight leading-relaxed font-semibold">
+                    {toast.message}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                  className="text-zinc-650 hover:text-white p-0.5 hover:bg-zinc-900 transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
     </div>
   );

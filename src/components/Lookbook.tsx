@@ -101,37 +101,37 @@ export default function Lookbook() {
             {/* Bento Card 1: Brand Concept story */}
             <div className="bg-[#0b0b0c] border border-zinc-900 p-8 flex flex-col justify-between min-h-[250px] relative group hover:border-zinc-850">
               <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block font-bold mb-4">
-                CONCEPT_01 // OUR PHILOSOPHY
+                01 // OUR MISSION
               </span>
               <div>
                 <h3 className="font-sans font-black text-2xl uppercase tracking-tight mb-2">
                   BUILT TO <span className="text-[#EFFF00]">LAST</span>
                 </h3>
-                <p className="text-zinc-500 text-xs font-sans leading-relaxed">
-                  We believe in apparel that stands the test of time. Our heavyweight cotton fabrics are woven at high-density (up to 520GSM) with tight double-stitch detailing. They feel incredibly solid on the outside yet remain soft and comfortable for daily wear.
+                <p className="text-zinc-550 text-xs font-sans leading-relaxed">
+                  We design streetwear that is made to last. Our heavy organic cotton is durable and comfortable, featuring double-stitch details for long wear.
                 </p>
               </div>
               <div className="mt-6 flex justify-between items-center text-zinc-650 font-mono text-[9px]">
-                <span>FIT: GENEROUS BOXY</span>
-                <span>ORIGIN: LONDON STUDIO</span>
+                <span>FIT: BOXY</span>
+                <span>ORIGIN: NIGERIA</span>
               </div>
             </div>
 
             {/* Bento Card 2: Fabric Blueprint */}
             <div className="bg-[#0b0b0c] border border-zinc-900 p-8 flex flex-col justify-between min-h-[250px] relative group hover:border-zinc-850">
               <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block font-bold mb-4">
-                CONCEPT_02 // MATERIALS
+                02 // PRESTIGE FABRICS
               </span>
               <div>
                 <h3 className="font-sans font-black text-2xl uppercase tracking-tight mb-2">
-                  PREMIUM FABRIC
+                  PREMIUM COTTON
                 </h3>
-                <p className="text-zinc-500 text-xs font-sans leading-relaxed">
-                  We formulate custom yarn specifications for exact silhouettes. Zero synthetic fibers. We use 100% long-staple combed cotton spun at high tension to retain its shape, custom dyed to deliver unmatched rich textures that do not fade easily.
+                <p className="text-zinc-550 text-xs font-sans leading-relaxed">
+                  We use 100% natural organic cotton fabrics. No polyester or synthetic blends. Our garments keep their shape and offer premium thickness and breathability.
                 </p>
               </div>
               <div className="mt-6 flex justify-between items-center text-zinc-650 font-mono text-[9px]">
-                <span>DENSITY: 280-520GSM</span>
+                <span>FABRIC: PREMIUM COTTON</span>
                 <span>WASH: VINTAGE BLACK</span>
               </div>
             </div>
@@ -141,13 +141,13 @@ export default function Lookbook() {
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block font-bold mb-4">
-                    STUDIO WORK // INDIVIDUAL CARE
+                    03 // COMFORT & CRAFT
                   </span>
                   <h3 className="font-sans font-black text-3xl uppercase tracking-tight mb-3">
-                    FINELY PRINTED & FINISHED
+                    HAND-FINISHED DESIGNS
                   </h3>
-                  <p className="text-zinc-500 text-xs font-sans leading-relaxed max-w-md">
-                    To maintain complete control over our quality standards, Cactus Bear avoids fast-fashion mass production. Every garment is designed, printed, hand-inspected, and individually wrapped by our team in Lagos before dispatch. This is our promise of authentic premium streetwear.
+                  <p className="text-zinc-550 text-xs font-sans leading-relaxed max-w-md">
+                    To maintain our high quality standards, we avoid mass production. Each streetwear item is custom designed, hand-inspected, and shipped from our studio in Lagos. That's our promise of simple, elegant everyday luxury.
                   </p>
                 </div>
                 <div className="flex gap-4 mt-6">
@@ -166,17 +166,17 @@ export default function Lookbook() {
               <div className="w-full md:w-56 bg-black/60 border border-zinc-850 p-4 flex flex-col justify-between font-mono text-[9px] text-zinc-500 relative shrink-0">
                 <div className="absolute inset-0 bg-[#EFFF00]/5 opacity-35" />
                 <div className="flex justify-between border-b border-zinc-900 pb-2">
-                  <span>PRODUCT SPEC</span>
-                  <span className="text-white">CB_SPEC_V1</span>
+                  <span>PRODUCT INFO</span>
+                  <span className="text-white">CB_SPECS</span>
                 </div>
                 <div className="flex flex-col gap-1 my-3 text-[10px]">
-                  <div className="flex justify-between"><span>[01] COMBED YARN:</span> <span className="text-white">100% OK</span></div>
-                  <div className="flex justify-between"><span>[02] CROWN STITCH:</span> <span className="text-white">DOUBLE</span></div>
-                  <div className="flex justify-between"><span>[03] ECO DYEING:</span> <span className="text-white">CERTIFIED</span></div>
-                  <div className="flex justify-between"><span>[04] WEIGHT TYPE:</span> <span className="text-white">HEAVY</span></div>
+                  <div className="flex justify-between"><span>[01] COTTON YARN:</span> <span className="text-white">100% ORGANIC</span></div>
+                  <div className="flex justify-between"><span>[02] HEM STITCH:</span> <span className="text-white">DOUBLE</span></div>
+                  <div className="flex justify-between"><span>[03] DYE QUALITY:</span> <span className="text-white">CERTIFIED</span></div>
+                  <div className="flex justify-between"><span>[04] MATERIAL SLT:</span> <span className="text-white">HEAVY</span></div>
                 </div>
                 <div className="text-center bg-[#EFFF00]/10 text-[#EFFF00] py-1 border border-[#EFFF00]/20">
-                  READY TO SHIP
+                  IN STOCK
                 </div>
               </div>
             </div>
@@ -194,13 +194,13 @@ export default function Lookbook() {
 
             <div>
               <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block font-bold mb-4">
-                CONCEPT_04 // AMBIENT STUDIO SOUNDS
+                04 // AMBIENT STUDIO HUMS
               </span>
               <h3 className="font-sans font-black text-2xl uppercase tracking-tight">
-                STUDIO SOUND <span className="text-[#EFFF00]">HUMS</span>
+                AMBIENT <span className="text-[#EFFF00]">SOUNDS</span>
               </h3>
               <p className="text-zinc-550 text-xs font-sans mt-2 leading-relaxed">
-                Play and mix ambient low-synthesized hums inspired by our printing workshop. These replicate the gentle sounds of design printing machines, sewing looms, and static background airwaves.
+                Play soft, relaxing workshop background tones inspired by our print shop. Replicate the gentle hum of design machines and static background airwaves.
               </p>
 
               {/* Synthesizer switches */}
@@ -222,8 +222,8 @@ export default function Lookbook() {
                       <Volume2 size={14} className={isPlayingHum === "drone" ? "animate-pulse" : ""} />
                     </div>
                     <div>
-                      <span className="font-mono text-[9px] text-zinc-650 block">[ LOW MACHINE HUM ]</span>
-                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">INDUSTRIAL WORKSHOP HEAVY HUM</span>
+                      <span className="font-mono text-[9px] text-zinc-650 block">[ WORKSHOP HUM ]</span>
+                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">LOW MACHINE MOTOR DRONE</span>
                     </div>
                   </div>
                   <span className="font-mono text-[10px] text-[#EFFF00]">
@@ -247,8 +247,8 @@ export default function Lookbook() {
                       <Zap size={14} className={isPlayingHum === "pulse" ? "animate-bounce" : ""} />
                     </div>
                     <div>
-                      <span className="font-mono text-[9px] text-zinc-650 block">[ PULSE RATE ]</span>
-                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">LOOM METRONOME STATIC</span>
+                      <span className="font-mono text-[9px] text-zinc-650 block">[ STEADY BEAT ]</span>
+                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">RHYTHMIC WORKSHOP PULSE</span>
                     </div>
                   </div>
                   <span className="font-mono text-[10px] text-[#EFFF00]">
@@ -272,8 +272,8 @@ export default function Lookbook() {
                       <Music size={14} className={isPlayingHum === "hiss" ? "animate-pulse" : ""} />
                     </div>
                     <div>
-                      <span className="font-mono text-[9px] text-zinc-650 block">[ SOFT AIR ]</span>
-                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">VINTAGE BROADCAST STATIC</span>
+                      <span className="font-mono text-[9px] text-zinc-650 block">[ WHITE NOISE ]</span>
+                      <span className="font-sans font-extrabold text-xs uppercase tracking-tight">SOFT STEADY STATIC HUM</span>
                     </div>
                   </div>
                   <span className="font-mono text-[10px] text-[#EFFF00]">

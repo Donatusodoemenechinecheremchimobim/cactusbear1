@@ -36,6 +36,25 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const handleQuickBuyDefault = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const defaultSize = product.sizes[0] || "L";
+    const defaultColor = product.colors[0];
+    
+    const cartItem: CartItem = {
+      id: `std-${product.id}-${defaultColor.name}-${defaultSize}`,
+      product,
+      selectedColor: defaultColor,
+      selectedSize: defaultSize,
+      quantity: 1,
+    };
+
+    onAddToCart(cartItem);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
   const handleShowDetails = (e: React.MouseEvent) => {
     if (onSelect) {
       e.stopPropagation();
@@ -46,9 +65,11 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
   };
 
   return (
-    <div
+    <motion.div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      whileHover={{ scale: 1.015, y: -2 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="group bg-[#050505] border border-zinc-900 overflow-hidden flex flex-col justify-between relative transition-all duration-300 hover:border-[#EFFF00]/40"
     >
       {/* Top Header Grid info */}
@@ -62,6 +83,14 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         onClick={handleShowDetails}
         className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
       >
+        {/* Floating Low Stock Badge */}
+        {product.stock !== undefined && product.stock <= 5 && (
+          <div className="absolute top-3 left-3 z-20 bg-black/80 border border-red-550/60 text-[#ff4b4b] font-mono text-[8.5px] font-black px-2 py-1 uppercase tracking-widest flex items-center gap-1.5 select-none shadow-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ff4b4b] animate-pulse" />
+            LOW STOCK ({product.stock})
+          </div>
+        )}
+
         {/* Floating Wishlist Heart Tag */}
         <button
           onClick={(e) => {
@@ -364,14 +393,21 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         </div>
 
         {/* Hover quick details slide */}
-        <div className="absolute inset-x-0 bottom-0 bg-black/85 backdrop-blur-sm p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex justify-between items-center">
-          <span className="font-mono text-[9px] text-[#EFFF00]">
-            VIEW PRODUCT DETAILS
-          </span>
-          <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-400">
-            <Eye size={11} />
+        <div className="absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex gap-2 items-center">
+          <button
+            onClick={handleQuickBuyDefault}
+            disabled={added}
+            className="flex-1 bg-[#EFFF00] hover:bg-white disabled:bg-[#EFFF00]/50 disabled:text-black/50 text-black font-mono font-black text-[9px] tracking-wider py-2 uppercase transition-all text-center cursor-pointer"
+          >
+            {added ? "ADDED!" : "QUICK BUY"}
+          </button>
+          <button
+            onClick={handleShowDetails}
+            className="flex-1 bg-zinc-950 border border-zinc-800 hover:border-zinc-500 text-white font-mono text-[9px] tracking-wider py-2 uppercase transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Eye size={10} />
             DETAILS
-          </div>
+          </button>
         </div>
       </div>
 
@@ -459,6 +495,29 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
             </button>
           </div>
 
+          {/* Quick Buy Button Strip */}
+          <button
+            onClick={handleQuickBuyDefault}
+            disabled={added}
+            className={`w-full font-mono text-[9px] font-bold tracking-[0.15em] uppercase transition-all py-2.5 border flex items-center justify-center gap-1.5 hover:scale-[1.01] cursor-pointer ${
+              added
+                ? "bg-[#EFFF00] text-black border-[#EFFF00]"
+                : "bg-black hover:bg-[#EFFF00] hover:text-black border-zinc-900 hover:border-[#EFFF00] text-zinc-400"
+            }`}
+          >
+            {added ? (
+              <>
+                <Check size={11} className="animate-bounce" />
+                SECURED TO BAG
+              </>
+            ) : (
+              <>
+                <ShoppingBag size={11} />
+                QUICK BUY ({product.sizes[0] || "L"})
+              </>
+            )}
+          </button>
+
         </div>
       </div>
 
@@ -510,6 +569,87 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           </motion.div>
         )}
       </AnimatePresence>
+    </motion.div>
+  );
+}
+
+export function ProductCardSkeleton() {
+  return (
+    <div className="bg-[#050505] border border-zinc-900 overflow-hidden flex flex-col justify-between relative animate-pulse select-none">
+      {/* Top Header Grid info */}
+      <div className="flex justify-between items-center px-4 py-2 bg-black/40 border-b border-zinc-900">
+        <div className="h-3 w-14 bg-zinc-900 rounded" />
+        <div className="h-3 w-16 bg-zinc-900 rounded" />
+      </div>
+
+      {/* Main product showcase box */}
+      <div className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden">
+        {/* Wishlist item placeholder */}
+        <div className="absolute top-3 right-3 w-8 h-8 bg-black/65 border border-zinc-900" />
+        
+        {/* Central Vector mock placeholder */}
+        <div className="relative w-28 h-28 sm:w-36 sm:h-36 bg-zinc-950/70 border border-zinc-900/50 flex flex-col items-center justify-center p-3">
+          {/* Tech layout aesthetics inside */}
+          <div className="w-full h-full border border-dashed border-zinc-800/40 relative flex items-center justify-center">
+            {/* Corner dots */}
+            <span className="absolute top-1 left-1 w-1 h-1 bg-zinc-800/60" />
+            <span className="absolute top-1 right-1 w-1 h-1 bg-zinc-800/60" />
+            <span className="absolute bottom-1 left-1 w-1 h-1 bg-zinc-800/60" />
+            <span className="absolute bottom-1 right-1 w-1 h-1 bg-zinc-800/60" />
+            
+            {/* Abstract apparel graphic skeleton inside */}
+            <div className="w-12 h-16 bg-zinc-900/65 opacity-60 border border-zinc-800/70" />
+          </div>
+        </div>
+      </div>
+
+      {/* Info Blocks and purchase commands */}
+      <div className="p-4 border-t border-zinc-900 bg-black/60">
+        <div className="flex justify-between items-start gap-2">
+          {/* Product name skeleton */}
+          <div className="h-4 bg-zinc-900 rounded w-2/3 my-1" />
+          {/* Price skeleton */}
+          <div className="h-5 bg-zinc-900 rounded w-12" />
+        </div>
+
+        {/* Description lines */}
+        <div className="space-y-2 mt-3">
+          <div className="h-2.5 bg-zinc-900 rounded w-full" />
+          <div className="h-2.5 bg-zinc-900 rounded w-4/5" />
+        </div>
+
+        {/* Interfacing panel toggling colors and sizes */}
+        <div className="mt-4 flex flex-col gap-3.5 pt-3.5 border-t border-zinc-950">
+          {/* Colors row */}
+          <div className="flex gap-2 items-center">
+            <div className="h-2.5 bg-zinc-900 w-10 rounded" />
+            <div className="flex gap-1.5">
+              <div className="w-3.5 h-3.5 bg-zinc-900" />
+              <div className="w-3.5 h-3.5 bg-zinc-900" />
+              <div className="w-3.5 h-3.5 bg-zinc-900" />
+            </div>
+          </div>
+
+          {/* Sizing choosing row */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2.5">
+            <div className="flex gap-1.5 items-center">
+              <div className="h-2.5 bg-zinc-900 w-8 rounded" />
+              <div className="flex gap-1">
+                <div className="w-6 h-4 bg-zinc-900" />
+                <div className="w-6 h-4 bg-zinc-900" />
+                <div className="w-6 h-4 bg-zinc-900" />
+              </div>
+            </div>
+
+            {/* Quick-add button placeholder */}
+            <div className="h-8 bg-zinc-900 w-full sm:w-8" />
+          </div>
+
+          {/* Quick Buy Button Strip placeholder */}
+          <div className="w-full h-9 bg-zinc-900" />
+        </div>
+      </div>
     </div>
   );
 }
+

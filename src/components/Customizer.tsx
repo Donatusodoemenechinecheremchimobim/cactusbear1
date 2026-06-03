@@ -138,24 +138,24 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
           </div>
           <div>
             <span className="text-[#EFFF00] font-mono text-xs tracking-widest font-bold uppercase block mb-1">
-              ✦ EDITORIAL LAB • BESPOKE CREATIVE
+              ✦ DESIGN STUDIO • CUSTOM DESIGNS
             </span>
             <h3 className="text-3xl font-sans font-black tracking-tight uppercase text-white">
-              STUDIO CUSTOMIZER
+              CUSTOMIZER LAB
             </h3>
             <span className="font-mono text-[10px] bg-[#EFFF00] text-black px-3.5 py-1 mt-2.5 inline-block font-extrabold tracking-[0.2em] uppercase">
-              COMING SOON TO ATELIER
+              COMING SOON
             </span>
           </div>
           <p className="text-zinc-400 text-xs leading-relaxed font-sans">
-            Our interactive bespoke embroidery and wash calibration tools are undergoing final design checks. Creative club members with active Studio Access keys will receive priority reservations.
+            Our custom clothing design tools are launching soon. You will be able to choose custom cotton thread stitching, printing alignments, and unique back-prints.
           </p>
           <div className="w-full h-px bg-zinc-900" />
           <a
             href="#unlocked-terminal"
             className="w-full bg-zinc-900 border border-zinc-800 hover:border-[#EFFF00] text-white hover:text-[#EFFF00] font-mono text-[9px] py-3.5 tracking-widest uppercase transition-colors"
           >
-            SECURE EARLY COLLECTION RESERVATIONS
+            PRE-ORDER NEW RELEASES
           </a>
         </div>
       </div>
@@ -164,13 +164,13 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
         <div className="flex flex-col md:flex-row items-start justify-between mb-12 gap-4">
           <div>
             <span className="text-[#EFFF00] font-mono text-xs tracking-widest font-semibold uppercase block mb-1">
-              [ STAGE_02 // ATELIER CRAFT ]
+              [ CUSTOM DESIGN LAB ]
             </span>
             <h2 className="text-4xl md:text-5xl font-sans tracking-tighter font-extrabold uppercase">
-              STUDIO <span className="text-[#EFFF00]">DESIGN</span> ATELIER
+              CUSTOM <span className="text-[#EFFF00]">DESIGN</span> LAB
             </h2>
-            <p className="text-zinc-500 text-sm max-w-xl mt-2">
-              Select custom material finishes, set printing alignments, and calibrate wash textures. Hand-prepared and tailored to order in our London workshop.
+            <p className="text-zinc-550 text-sm max-w-xl mt-2">
+              Select custom streetwear items, adjust the alignment of the crown graphic, and choose customized glows. Individually crafted and custom printed.
             </p>
           </div>
           
@@ -179,7 +179,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
             className="flex items-center gap-2 px-4 py-2 border border-zinc-800 hover:border-[#EFFF00] rounded-none text-xs font-mono tracking-wider hover:text-[#EFFF00] transition-colors"
           >
             <RefreshCw size={13} />
-            RESET ATELIER WORKSPACE
+            RESET DESIGN
           </button>
         </div>
 
@@ -463,7 +463,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                   {/* Print Scale */}
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between font-mono text-[10px] text-zinc-500">
-                      <span>CROWN GRAPHIC SCALE</span>
+                      <span>GRAPHIC SIZE</span>
                       <span className="text-white">{(scale * 100).toFixed(0)}%</span>
                     </div>
                     <input
@@ -480,7 +480,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                   {/* Radioactive Glow Intensity */}
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between font-mono text-[10px] text-zinc-500">
-                      <span>GLOW INTENSITY</span>
+                      <span>GLOW BRIGHTNESS</span>
                       <span className="text-white">{glowIntensity}%</span>
                     </div>
                     <input

@@ -12,7 +12,8 @@ import {
   QrCode,
   RotateCcw,
   Scissors,
-  Heart
+  Heart,
+  Share2
 } from "lucide-react";
 import { Product, CartItem, ApparelColor } from "../types";
 import GlowCrown from "./GlowCrown";
@@ -48,6 +49,45 @@ export default function ProductDetailPage({
   const [activeTab, setActiveTab] = useState<"specifications" | "manufacturing" | "shipping">("specifications");
   const [isZoomed, setIsZoomed] = useState<boolean>(false);
   const [showQrCode, setShowQrCode] = useState<boolean>(false);
+  const [shareStatus, setShareStatus] = useState<string>("");
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
+
+  const handleShareClick = async () => {
+    const shareData = {
+      title: product.name,
+      text: `${product.name} - ${product.description} (SKU: ${product.sku}) / PRESET VAULT SERIE`,
+      url: window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        setShareStatus("SHARED");
+        setTimeout(() => setShareStatus(""), 2000);
+      } catch (err) {
+        console.log("Web Share failed or cancelled:", err);
+      }
+    } else {
+      // Fallback: Copy link to clipboard
+      try {
+        await navigator.clipboard.writeText(
+          `${product.name}\n${product.description}\n\nLink: ${window.location.href}`
+        );
+        setShareStatus("LINK COPIED");
+        setTimeout(() => setShareStatus(""), 2000);
+      } catch (copyErr) {
+        console.error("Clipboard copy failed:", copyErr);
+      }
+    }
+  };
 
   // Scroll to top when changing products
   useEffect(() => {
@@ -90,11 +130,11 @@ export default function ProductDetailPage({
           className="flex items-center gap-2 group font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-400 hover:text-[#EFFF00] transition-colors cursor-pointer"
         >
           <ArrowLeft size={12} className="transition-transform group-hover:-translate-x-1" />
-          <span>⟵ BACK TO ARCHIVE</span>
+          <span>⟵ BACK TO PRODUCTS</span>
         </button>
 
         <span className="font-mono text-[9px] text-zinc-650 tracking-[0.2em] uppercase hidden sm:inline">
-          CATALOGUE SPECIFICATION // {product.sku}
+          PRODUCT DETAILS // {product.sku}
         </span>
       </div>
 
@@ -115,62 +155,82 @@ export default function ProductDetailPage({
             {/* Tactical overlay target grid */}
             <div className="absolute inset-0 bg-[radial-gradient(#EFFF00_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.06] pointer-events-none" />
 
-            {/* Corner Decorative Terminal Badges */}
+            {/* Corner Decorative Badges */}
             <div className="absolute top-4 left-4 font-mono text-[8px] text-zinc-600 uppercase tracking-widest hidden xs:block">
-              SERIES SPEC_01 // RUN_ACTIVE
+              SERIES 01 // IN STOCK
             </div>
             <div className="absolute top-4 right-4 font-mono text-[8px] text-zinc-600 uppercase tracking-widest flex items-center gap-1.5 hidden xs:inline-flex">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
-              ATELIER APPROVED
+              AUTHENTIC DESIGN
             </div>
 
             {/* Visual presentation stage */}
-            <motion.div 
-              className={`relative z-10 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 transition-transform duration-500 cursor-zoom-in ${isZoomed ? "scale-125 cursor-zoom-out" : "hover:scale-105"}`}
-              onClick={() => setIsZoomed(!isZoomed)}
-              layoutId={`product-image-${product.id}`}
+            <div 
+              className="relative z-10 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 overflow-hidden cursor-crosshair flex items-center justify-center"
+              onMouseMove={handleMouseMove}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => {
+                setIsHovered(false);
+                setZoomPos({ x: 50, y: 50 });
+              }}
             >
-              {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  referrerPolicy="no-referrer"
-                  className="max-w-full max-h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.85)]"
-                />
-              ) : (
-                <RenderGarmentSVG id={product.id} colorHex={selectedColor.hex} mockupType={product.mockupType} isHovered={true} />
-              )}
-
-              {/* Embroidered Micro Logo badge overlay */}
-              {!product.imageUrl && (
-                <div
-                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none w-[42px] h-[24px]"
-                  style={{
-                    transform: `translate(
-                      calc(-50% + ${
-                        product.id === "cb-buttonup-02" ? "13px" : "0px"
-                      }), 
-                      calc(-50% + ${
-                        product.id === "cb-jersey-01" ? "-4px" :
-                        product.id === "cb-buttonup-02" ? "-6px" :
-                        product.id === "cb-sweatshirt-04" ? "-17px" :
-                        product.id === "cb-trucker-05" ? "-11px" : "-2px"
-                      })
-                    )`
-                  }}
-                >
-                  <GlowCrown
-                    size={"100%"}
-                    color={selectedColor.name === "Bleach White" ? "#000000" : "#EFFF00"}
-                    glow={true}
+              <motion.div 
+                className="relative w-full h-full flex items-center justify-center select-none"
+                style={{
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transform: isHovered ? "scale(2.5)" : "scale(1)",
+                  transition: isHovered ? "transform 0.05s ease-out" : "transform 0.3s ease-in-out, transform-origin 0.3s ease-in-out"
+                }}
+                layoutId={`product-image-${product.id}`}
+              >
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    referrerPolicy="no-referrer"
+                    className="max-w-full max-h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.85)]"
                   />
-                </div>
-              )}
-            </motion.div>
+                ) : (
+                  <RenderGarmentSVG id={product.id} colorHex={selectedColor.hex} mockupType={product.mockupType} isHovered={true} />
+                )}
+
+                {/* Embroidered Micro Logo badge overlay */}
+                {!product.imageUrl && (
+                  <div
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none w-[42px] h-[24px]"
+                    style={{
+                      transform: `translate(
+                        calc(-50% + ${
+                          product.id === "cb-buttonup-02" ? "13px" : "0px"
+                        }), 
+                        calc(-50% + ${
+                          product.id === "cb-jersey-01" ? "-4px" :
+                          product.id === "cb-buttonup-02" ? "-6px" :
+                          product.id === "cb-sweatshirt-04" ? "-17px" :
+                          product.id === "cb-trucker-05" ? "-11px" : "-2px"
+                        })
+                      )`
+                    }}
+                  >
+                    <GlowCrown
+                      size={"100%"}
+                      color={selectedColor.name === "Bleach White" ? "#000000" : "#EFFF00"}
+                      glow={true}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            </div>
 
             {/* Interaction Instruction Banner */}
-            <div className="absolute bottom-4 inset-x-0 text-center font-mono text-[8px] text-zinc-550 tracking-wider">
-              ✦ CLICK PRODUCT SCHEMATIC TO {isZoomed ? "ZOOM OUT" : "ACTIVATE HIGH-RES ZOOM"} ✦
+            <div className="absolute bottom-4 inset-x-0 text-center font-mono text-[8px] tracking-wider z-20">
+              {isHovered ? (
+                <span className="text-[#EFFF00] font-black animate-pulse">
+                  ✦ MAGNIFIER ACTIVE: X:{(zoomPos.x).toFixed(0)}% Y:{(zoomPos.y).toFixed(0)}% • 250% WEAVE DETAIL ✦
+                </span>
+              ) : (
+                <span className="text-zinc-550">✦ HOVER OVER IMAGE TO ACTIVATE 250% MACRO TEXTURE INSPECTION ✦</span>
+              )}
             </div>
 
           </div>
@@ -218,9 +278,16 @@ export default function ProductDetailPage({
                 <span className="font-mono text-xl sm:text-2xl font-black text-white bg-[#1a1a08] border border-[#EFFF00]/20 px-3 py-1">
                   ${product.price}
                 </span>
-                <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest border border-[#EFFF00]/30 px-2.5 py-1 bg-black">
-                  IN STOCK
-                </span>
+                {product.stock !== undefined && product.stock <= 5 ? (
+                  <span className="font-mono text-[9px] text-[#ff4b4b] uppercase tracking-widest border border-red-550/30 px-2.5 py-1 bg-black flex items-center gap-1.5 animate-pulse font-black">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff4b4b]" />
+                    LOW STOCK ({product.stock} REMAINING)
+                  </span>
+                ) : (
+                  <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest border border-[#EFFF00]/30 px-2.5 py-1 bg-black">
+                    IN STOCK
+                  </span>
+                )}
               </div>
             </div>
 
@@ -330,6 +397,27 @@ export default function ProductDetailPage({
                 >
                   <Heart size={18} fill={isWishlisted ? "#EFFF00" : "none"} />
                 </button>
+
+                <button
+                  onClick={handleShareClick}
+                  className="w-14 h-14 border flex items-center justify-center transition-all cursor-pointer relative border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-550 bg-black/40"
+                  title="Share product specs"
+                >
+                  <AnimatePresence>
+                    {shareStatus && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#EFFF00] text-black text-[9px] font-mono font-black py-1 px-2.5 uppercase tracking-wider select-none pointer-events-none z-30"
+                      >
+                        [ {shareStatus} ]
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-t-[4px] border-t-[#EFFF00] border-x-[4px] border-x-transparent" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <Share2 size={18} className={shareStatus ? "text-[#EFFF00]" : ""} />
+                </button>
               </div>
 
               <button
@@ -355,9 +443,9 @@ export default function ProductDetailPage({
                       <div className="w-full h-full bg-[linear-gradient(45deg,#000_25%,transparent_25%),linear-gradient(-45deg,#000_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#000_75%),linear-gradient(-45deg,transparent_75%,#000_75%)] [background-size:8px_8px] [background-position:0_0,0_4px,4px,-4px,-4px_0]" />
                     </div>
                     <div className="flex-1 font-mono text-[9px] text-zinc-500">
-                      <span className="text-[#EFFF00] font-bold block uppercase mb-1">SECURE RUN ID TOKEN:</span>
+                      <span className="text-[#EFFF00] font-bold block uppercase mb-1">PRODUCT CODE:</span>
                       <code className="text-white select-all block break-all font-bold text-[8px] bg-zinc-950 p-1.5 border border-zinc-900 mb-1">{`CB-${product.id}-${product.sku}-${selectedColor.name.replace(" ", "-")}`}</code>
-                      <span>Each piece displays a NFC physical signature thread in the neckline. Scan signature on arrival is required.</span>
+                      <span>Each garment includes an authentic secure care label. Secure tracking is provided on purchase.</span>
                     </div>
                   </div>
                 </motion.div>
@@ -373,7 +461,7 @@ export default function ProductDetailPage({
                     activeTab === "specifications" ? "bg-zinc-950 text-[#EFFF00] font-bold" : "text-zinc-550 hover:text-white"
                   }`}
                 >
-                  SPECS
+                  DETAILS
                 </button>
                 <button
                   onClick={() => setActiveTab("manufacturing")}
@@ -381,7 +469,7 @@ export default function ProductDetailPage({
                     activeTab === "manufacturing" ? "bg-zinc-950 text-[#EFFF00] font-bold" : "text-zinc-550 hover:text-white"
                   }`}
                 >
-                  ATELIER DESIGN
+                  CRAFT
                 </button>
                 <button
                   onClick={() => setActiveTab("shipping")}
@@ -389,7 +477,7 @@ export default function ProductDetailPage({
                     activeTab === "shipping" ? "bg-zinc-950 text-[#EFFF00] font-bold" : "text-zinc-550 hover:text-white"
                   }`}
                 >
-                  DELIVERY
+                  SHIPPING
                 </button>
               </div>
 
@@ -411,7 +499,7 @@ export default function ProductDetailPage({
                       ))}
                       <div className="flex items-start gap-2 text-zinc-350">
                         <span className="text-[#EFFF00]">✦</span>
-                        <span>Official Sizing run standard {product.sizes.join(", ")} model profile.</span>
+                        <span>Available in sizes {product.sizes.join(", ")}. Standard boxy fit.</span>
                       </div>
                     </motion.div>
                   )}
@@ -425,10 +513,10 @@ export default function ProductDetailPage({
                       className="flex flex-col gap-2 h-full text-zinc-450"
                     >
                       <p>
-                        <strong className="text-white uppercase">[ SUSTAINABILITY COMMITTED ]</strong> Prepared strictly in short batches in Yaba, Lagos. Eliminating high production waste.
+                        <strong className="text-white uppercase">[ SUSTAINABLE ]</strong> Crafted in small batches in Lagos, Nigeria to reduce manufacturing waste.
                       </p>
                       <p className="mt-2 text-zinc-500 font-bold block">
-                        THREADS: Premium bonded core stitching. Soft stretch comfort seams. Made the traditional way to withstand centuries of structural wear.
+                        THREADS: Double-stitched seams built for maximum comfort and long wear.
                       </p>
                     </motion.div>
                   )}
@@ -443,14 +531,14 @@ export default function ProductDetailPage({
                     >
                       <div className="flex items-center gap-2">
                         <Truck size={12} className="text-[#EFFF00]" />
-                        <span className="text-white uppercase font-bold">NATIONWIDE & GLOBAL LOGISTICS:</span>
+                        <span className="text-white uppercase font-bold">WORLDWIDE SHIPPING:</span>
                       </div>
                       <p>
-                        Lagos deliveries arrived in 24 - 48 hours. Standard regional departures ship via verified tracked couriers in 3 - 5 business days.
+                        Delivers inside Lagos in 24-48 hours. National and international orders ship via tracked couriers in 3-5 business days.
                       </p>
                       <div className="flex items-center gap-2 border-t border-zinc-950 pt-3 text-zinc-500">
                         <RotateCcw size={11} className="text-[#EFFF00]" />
-                        <span>30-DAY RETRO EXCHANGE WINDOW COVERAGE ENFORCED.</span>
+                        <span>30-day hassle-free returns and exchanges.</span>
                       </div>
                     </motion.div>
                   )}
@@ -464,14 +552,14 @@ export default function ProductDetailPage({
                 <ShieldCheck size={14} className="text-[#EFFF00]" />
                 <div className="flex flex-col">
                   <span className="text-white font-bold uppercase">SECURE PAYMENT</span>
-                  <span>SSL ATELIER ENCRYPTION</span>
+                  <span>SAFE & CHECKED CHECKOUT</span>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
                 <Sparkles size={14} className="text-[#EFFF00]" />
                 <div className="flex flex-col">
-                  <span className="text-white font-bold uppercase">100% EXCLUSIVE</span>
-                  <span>LIMITED COUTURE NUMBERS</span>
+                  <span className="text-white font-bold uppercase">100% UNIQUE</span>
+                  <span>LIMITED QUANTITIES</span>
                 </div>
               </div>
             </div>
