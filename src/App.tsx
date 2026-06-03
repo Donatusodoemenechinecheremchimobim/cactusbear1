@@ -14,7 +14,9 @@ import {
   ArrowDown,
   Cpu,
   Menu,
-  X
+  X,
+  Clock,
+  Package
 } from "lucide-react";
 
 import { CartItem, ProductCat } from "./types";
@@ -28,6 +30,7 @@ import Lookbook from "./components/Lookbook";
 import { dbService, authService, UserSession, DropTimerConfig } from "./services/firebase";
 import GoogleAuthModal from "./components/GoogleAuthModal";
 import AdminWorkspaceModal from "./components/AdminWorkspaceModal";
+import OrdersLookupModal from "./components/OrdersLookupModal";
 
 export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -54,6 +57,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [authOpen, setAuthOpen] = useState<boolean>(false);
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
+  const [ordersLookupOpen, setOrdersLookupOpen] = useState<boolean>(false);
   const [productsList, setProductsList] = useState<any[]>([]);
 
   const refreshDynamicProducts = async () => {
@@ -226,6 +230,12 @@ export default function App() {
           <a href="#unlocked-terminal" className="hover:text-[#EFFF00] transition-colors uppercase">
             04 / UPCOMING DROP
           </a>
+          <button 
+            onClick={() => setOrdersLookupOpen(true)}
+            className="hover:text-[#EFFF00] transition-colors uppercase font-mono text-[11px] font-semibold tracking-[0.12em] text-zinc-350 cursor-pointer text-left"
+          >
+            05 / TRACK ORDER
+          </button>
         </nav>
 
         {/* Navigation Actions and login buttons */}
@@ -271,6 +281,15 @@ export default function App() {
               LOGIN
             </button>
           )}
+
+          {/* Order tracking lookup trigger */}
+          <button
+            onClick={() => setOrdersLookupOpen(true)}
+            className="flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
+          >
+            <Clock size={12} className="text-[#EFFF00]" />
+            <span>TRACKER</span>
+          </button>
 
           {/* Vault cart trigger button */}
           <button
@@ -334,6 +353,15 @@ export default function App() {
               >
                 04 / UPCOMING DROP
               </a>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setOrdersLookupOpen(true);
+                }}
+                className="hover:text-[#EFFF00] active:text-[#EFFF00] text-left transition-all block font-sans text-base font-black tracking-tight text-zinc-100 uppercase cursor-pointer"
+              >
+                05 / TRACK PRE-ORDERS
+              </button>
             </div>
 
             {/* Mobile Session Actions Shortcut */}
@@ -746,6 +774,13 @@ export default function App() {
         onLoginSuccess={(session) => {
           setCurrentUser(session);
         }}
+      />
+
+      {/* ORDERS LOOKUP AND LIVE TRACKING PORTAL */}
+      <OrdersLookupModal
+        isOpen={ordersLookupOpen}
+        onClose={() => setOrdersLookupOpen(false)}
+        currentUser={currentUser}
       />
 
       {/* ADMINISTRATIVE WORKSPACE MODAL */}

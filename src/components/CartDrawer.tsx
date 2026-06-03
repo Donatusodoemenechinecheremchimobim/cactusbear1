@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound } from "lucide-react";
+import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail } from "lucide-react";
 import { CartItem } from "../types";
 import GlowCrown from "./GlowCrown";
 import { dbService } from "../services/firebase";
+import { NIGERIAN_STATES_AND_AREAS } from "../data/nigerianStates";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -14,22 +15,6 @@ interface CartDrawerProps {
   onClearCart: () => void;
 }
 
-const NIGERIAN_STATES = [
-  "Lagos (Mainland)",
-  "Lagos (Island / Lekki / VI)",
-  "Abuja (FCT)",
-  "Port Harcourt (Rivers)",
-  "Ibadan (Oyo)",
-  "Enugu",
-  "Benin City (Edo)",
-  "Asaba / Warri (Delta)",
-  "Kano",
-  "Kaduna",
-  "Abeokuta / Ota (Ogun)",
-  "Awka / Onitsha (Anambra)",
-  "Other State / Location"
-];
-
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -39,6 +24,13 @@ export default function CartDrawer({
   onClearCart
 }: CartDrawerProps) {
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "confirm">("cart");
+  
+  // State-area selectors for Nigeria
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedArea, setSelectedArea] = useState<string>("");
+  const [customArea, setCustomArea] = useState<string>("");
+  const [streetDetail, setStreetDetail] = useState<string>("");
+
   const [shippingForm, setShippingForm] = useState({
     name: "",
     email: "",
@@ -48,6 +40,17 @@ export default function CartDrawer({
     country: "Nigeria",
     cryptKey: ""
   });
+
+  // Synchronize dynamic selections to shippingForm values
+  React.useEffect(() => {
+    const finalArea = selectedArea === "Other" ? customArea : selectedArea;
+    const combinedAddress = [streetDetail, finalArea].filter(Boolean).join(", ");
+    setShippingForm(prev => ({
+      ...prev,
+      city: selectedState,
+      address: combinedAddress
+    }));
+  }, [selectedState, selectedArea, customArea, streetDetail]);
   const [orderHash, setOrderHash] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -90,7 +93,44 @@ export default function CartDrawer({
         totalPrice: vaultTotal
       });
       setOrderHash(savedOrder.id);
+
+      // Save order info to local tracking lists for seamless reference-free list tracking
+      try {
+        const localTrackIds = JSON.parse(localStorage.getItem("cactus_bear_my_order_ids") || "[]");
+        if (!localTrackIds.includes(savedOrder.id)) {
+          localTrackIds.push(savedOrder.id);
+          localStorage.setItem("cactus_bear_my_order_ids", JSON.stringify(localTrackIds));
+        }
+        localStorage.setItem("cactus_bear_last_checkout_email", shippingForm.email);
+      } catch (storageErr) {
+        console.warn("Could not save to local device registers:", storageErr);
+      }
+
       setCheckoutStep("confirm");
+
+      // Auto-trigger WhatsApp dispatch message directly to the administrator
+      const cleanPhoneForWhatsapp = adminWhatsapp.replace(/[^0-9]/g, "");
+      const whatsappText = `*CACTUS BEAR DESIGN LABS - NEW PRE-ORDER DESIGNATED*\n` +
+        `---------------------------------------------\n` +
+        `*Order Reference:* ${savedOrder.id}\n` +
+        `*Patron Name:* ${shippingForm.name}\n` +
+        `*Patron Email:* ${shippingForm.email}\n` +
+        `*Contact Number:* ${shippingForm.phone}\n` +
+        `*Delivery Location Area:* ${shippingForm.address}, ${shippingForm.city}, ${shippingForm.country}\n` +
+        `---------------------------------------------\n` +
+        `*ITEMS:* \n` +
+        cart.map(item => `• ${item.quantity}x ${item.product.name} (Size: ${item.selectedSize}, Color: ${item.selectedColor.name})`).join("\n") +
+        `\n---------------------------------------------\n` +
+        `*TOTAL VALUE:* $${vaultTotal}.00 (approx. ₦${(vaultTotal * 1500).toLocaleString()})\n` +
+        `*CACTUS BEAR SECURE PLATFORM TRACKER - LAGOS, NIGERIA*`;
+
+      const whatsappUrl = `https://wa.me/${cleanPhoneForWhatsapp}?text=${encodeURIComponent(whatsappText)}`;
+      
+      // Execute non-blocking browser redirect window open
+      setTimeout(() => {
+        window.open(whatsappUrl, "_blank");
+      }, 500);
+
     } catch (err) {
       console.error("Order creation failed:", err);
     } finally {
@@ -300,44 +340,85 @@ export default function CartDrawer({
                         />
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-mono text-[9px] text-zinc-500 uppercase">STREET ADDRESS</label>
-                        <input
-                          required
-                          type="text"
-                          value={shippingForm.address}
-                          onChange={(e) => setShippingForm({ ...shippingForm, address: e.target.value })}
-                          className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors"
-                          placeholder="House number, street name, apartment..."
-                        />
-                      </div>
+                      {/* Two-tier structured State & Zone location selectors for Nigeria */}
+                      <div className="flex flex-col gap-4 border border-zinc-900 bg-black/40 p-4">
+                        <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest block font-black">
+                          🇳🇬 NIGERIAN DELIVERY HUB DESIGNATION
+                        </span>
 
-                      <div className="grid grid-cols-2 gap-3">
+                        {/* State selector */}
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-mono text-[9px] text-zinc-500 uppercase">STATE / CITY</label>
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">STATE / HUB</label>
                           <select
                             required
-                            value={shippingForm.city}
-                            onChange={(e) => setShippingForm({ ...shippingForm, city: e.target.value })}
-                            className="w-full bg-black border border-zinc-900 rounded-none py-2 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-white"
+                            value={selectedState}
+                            onChange={(e) => {
+                              setSelectedState(e.target.value);
+                              setSelectedArea("");
+                              setCustomArea("");
+                            }}
+                            className="w-full bg-black border border-zinc-900 rounded-none py-2 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-white cursor-pointer"
                           >
-                            <option value="" className="text-zinc-650">Select State...</option>
-                            {NIGERIAN_STATES.map((stateName) => (
-                              <option key={stateName} value={stateName} className="bg-black text-white">
+                            <option value="">Select State...</option>
+                            {Object.keys(NIGERIAN_STATES_AND_AREAS).sort().map((stateName) => (
+                              <option key={stateName} value={stateName}>
                                 {stateName}
                               </option>
                             ))}
                           </select>
                         </div>
+
+                        {/* Zone/Area selector (active when state selected) */}
+                        {selectedState && (
+                          <div className="flex flex-col gap-1.5">
+                            <label className="font-mono text-[9px] text-zinc-500 uppercase">ZONE / AREA / LGA</label>
+                            <select
+                              required
+                              value={selectedArea}
+                              onChange={(e) => {
+                                setSelectedArea(e.target.value);
+                                if (e.target.value !== "Other") {
+                                  setCustomArea("");
+                                }
+                              }}
+                              className="w-full bg-black border border-zinc-900 rounded-none py-2 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-white cursor-pointer"
+                            >
+                              <option value="">Select Delivery Area / City...</option>
+                              {NIGERIAN_STATES_AND_AREAS[selectedState]?.map((area) => (
+                                <option key={area} value={area}>
+                                  {area}
+                                </option>
+                              ))}
+                              <option value="Other">[ OTHER SPECIFIC REGION NOT LISTED ]</option>
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Manual entry text for Other zone */}
+                        {selectedState && selectedArea === "Other" && (
+                          <div className="flex flex-col gap-1.5">
+                            <label className="font-mono text-[9px] text-[#EFFF00] uppercase font-bold">MANUOUS REGION DESC</label>
+                            <input
+                              required
+                              type="text"
+                              value={customArea}
+                              onChange={(e) => setCustomArea(e.target.value)}
+                              className="w-full bg-black border border-[#EFFF00]/30 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-[#EFFF00]"
+                              placeholder="e.g. Omu-Aran Main Town"
+                            />
+                          </div>
+                        )}
+
+                        {/* Detailed street entry */}
                         <div className="flex flex-col gap-1.5">
-                          <label className="font-mono text-[9px] text-zinc-500 uppercase">COUNTRY</label>
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">STREET ADDRESS DETAIL</label>
                           <input
                             required
                             type="text"
-                            value={shippingForm.country}
-                            onChange={(e) => setShippingForm({ ...shippingForm, country: e.target.value })}
-                            className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors text-white"
-                            placeholder="Nigeria"
+                            value={streetDetail}
+                            onChange={(e) => setStreetDetail(e.target.value)}
+                            className="w-full bg-black border border-zinc-900 rounded-none py-1.5 px-3 font-mono text-xs focus:border-[#EFFF00] outline-none transition-colors"
+                            placeholder="House number, Street name, Estate / Apartment..."
                           />
                         </div>
                       </div>
