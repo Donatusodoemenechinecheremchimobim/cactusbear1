@@ -15,6 +15,7 @@ import {
   getAuth, 
   signInWithPopup, 
   GoogleAuthProvider, 
+  GithubAuthProvider,
   signOut as firebaseSignOut, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -27,6 +28,7 @@ export interface DbOrder {
   id: string;
   name: string;
   email: string;
+  phone?: string; // Contact phone/WhatsApp number
   address: string;
   city: string;
   country: string;
@@ -45,6 +47,8 @@ export interface DropTimerConfig {
   description: string;
   isActivated: boolean;
   notifyEmails: string[];
+  adminWhatsapp?: string; // Configurable phone number to receive WhatsApp alerts
+  adminEmail?: string;    // Configurable email address to receive order notifications
 }
 
 // Global persistence store inside localStorage (for fallback mode)
@@ -142,7 +146,9 @@ const getInitialTimer = (): DropTimerConfig => {
     targetDate: defaultTarget.toISOString(),
     description: "Premium heavy-dyed dual structured ripstop pants featuring our signature crown detailing, pleated knee boxes, and tactical release waist buckles.",
     isActivated: true,
-    notifyEmails: ["vip-patron@couture.com"]
+    notifyEmails: ["vip-patron@couture.com"],
+    adminWhatsapp: "2348123456789", // Preset default WhatsApp (e.g. support line)
+    adminEmail: "chibundusadiq@gmail.com" // Preset default Email (matches owner exactly)
   };
   localStorage.setItem(STORAGE_TIMER_KEY, JSON.stringify(defaultTimer));
   return defaultTimer;
@@ -176,6 +182,7 @@ const getInitialOrders = (): DbOrder[] => {
       id: "CB-PRE-70A5F",
       name: "Marcus Aurelius",
       email: "marcus.aurelius@rome.org",
+      phone: "+39 06 67101",
       address: "1 Palace Row, Forum Romanum",
       city: "Rome",
       country: "Italy",
@@ -513,6 +520,104 @@ class AuthService {
     this.currentSession = userSession;
     localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
     return userSession;
+  }
+
+  // Real or Simulated GitHub Sign In
+  public async signInWithGithub(): Promise<UserSession> {
+    if (isFirebaseConfigured && auth) {
+      try {
+        const provider = new GithubAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const fbUser = result.user;
+        const emailAddress = fbUser.email || "";
+        const isAdminUser = emailAddress.trim().toLowerCase() === "chibundusadiq@gmail.com";
+        
+        const userSession: UserSession = {
+          uid: fbUser.uid,
+          email: emailAddress,
+          displayName: fbUser.displayName || emailAddress.split("@")[0] || "GitHub Patron",
+          photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${fbUser.uid}`,
+          isAdmin: isAdminUser
+        };
+
+        this.currentSession = userSession;
+        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+        return userSession;
+      } catch (error) {
+        console.error("Firebase GitHub Auth error:", error);
+        throw error;
+      }
+    }
+
+    // High fidelity simulation
+    return this.signInWithGithubSimulate("github-patron@cactusbear.club");
+  }
+
+  public signInWithGithubSimulate(emailAddress: string): UserSession {
+    const standardName = emailAddress.split("@")[0];
+    const cleanName = standardName.charAt(0).toUpperCase() + standardName.slice(1);
+    const isAdminUser = emailAddress.trim().toLowerCase() === "chibundusadiq@gmail.com";
+    
+    const userSession: UserSession = {
+      uid: "github-uid-" + Math.floor(10000 + Math.random() * 90000),
+      email: emailAddress.trim().toLowerCase(),
+      displayName: cleanName + " (Github)",
+      photoURL: `https://api.dicebear.com/7.x/identicon/svg?seed=${standardName}`,
+      isAdmin: isAdminUser
+    };
+
+    this.currentSession = userSession;
+    localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+    return userSession;
+  }
+
+  // Real or Simulated Email & Password sign-in / registration
+  public async signInWithEmail(emailAddress: string, passwordInput: string): Promise<UserSession> {
+    const cleanEmail = emailAddress.trim().toLowerCase();
+    
+    if (isFirebaseConfigured && auth) {
+      try {
+        const result = await signInWithEmailAndPassword(auth, cleanEmail, passwordInput);
+        const fbUser = result.user;
+        const isAdminUser = cleanEmail === "chibundusadiq@gmail.com";
+        const userSession: UserSession = {
+          uid: fbUser.uid,
+          email: cleanEmail,
+          displayName: fbUser.displayName || cleanEmail.split("@")[0],
+          photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${fbUser.uid}`,
+          isAdmin: isAdminUser
+        };
+        this.currentSession = userSession;
+        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+        return userSession;
+      } catch (error: any) {
+        // If user not found or password doesn't match, or if register dynamic scenario
+        if (error.code === "auth/user-not-found" || error.code === "auth/invalid-credential" || error.code === "auth/wrong-password") {
+          // Attempt automatic registration for convenience
+          try {
+            const signupResult = await createUserWithEmailAndPassword(auth, cleanEmail, passwordInput);
+            const fbUser = signupResult.user;
+            const isAdminUser = cleanEmail === "chibundusadiq@gmail.com";
+            const userSession: UserSession = {
+              uid: fbUser.uid,
+              email: cleanEmail,
+              displayName: cleanEmail.split("@")[0],
+              photoURL: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${fbUser.uid}`,
+              isAdmin: isAdminUser
+            };
+            this.currentSession = userSession;
+            localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+            return userSession;
+          } catch (signupError: any) {
+            console.error("Firebase email signup error:", signupError);
+            throw signupError;
+          }
+        }
+        throw error;
+      }
+    }
+
+    return this.signInWithEmailSimulate(cleanEmail, passwordInput);
   }
 
   // Mock Email & Password login select

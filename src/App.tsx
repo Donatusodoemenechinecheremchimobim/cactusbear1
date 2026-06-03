@@ -316,10 +316,9 @@ export default function App() {
               <a
                 href="#customizer-lab"
                 onClick={() => setMobileMenuOpen(false)}
-                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-all flex items-center gap-2 block text-zinc-400"
+                className="hover:text-[#EFFF00] active:text-[#EFFF00] transition-colors block"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
-                02 / CUSTOMIZER (COMING SOON)
+                02 / STUDIO CUSTOMIZER
               </a>
               <a
                 href="#brand-lookbook"
@@ -335,6 +334,65 @@ export default function App() {
               >
                 04 / UPCOMING DROP
               </a>
+            </div>
+
+            {/* Mobile Session Actions Shortcut */}
+            <div className="mt-2 pt-4 border-t border-zinc-950 flex flex-col gap-3">
+              {currentUser ? (
+                <div className="flex items-center justify-between bg-zinc-950 border border-zinc-900 p-3">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName}
+                      className="w-6 h-6 rounded-full border border-[#EFFF00]/30"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-mono text-[9px] text-zinc-400 uppercase tracking-widest">
+                        PATRON
+                      </span>
+                      <span className="font-sans font-bold text-xs text-white">
+                        {currentUser.displayName}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {currentUser.isAdmin && (
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setAdminOpen(true);
+                        }}
+                        className="bg-[#EFFF00] text-black font-mono font-black text-[9px] px-2.5 py-1.5 uppercase tracking-wide cursor-pointer"
+                      >
+                        ADMIN
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        authService.signOut();
+                        setCurrentUser(null);
+                        setAdminOpen(false);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="text-red-400 hover:text-red-300 font-mono text-[9px] uppercase tracking-wider pl-2.5 border-l border-zinc-900 cursor-pointer"
+                    >
+                      LOGOUT
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 border border-[#EFFF00]/25 bg-black hover:border-[#EFFF00] py-3 text-center text-[10px] font-mono tracking-widest text-[#EFFF00] uppercase cursor-pointer"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
+                  INITIALIZE STUDIO SIGN-IN
+                </button>
+              )}
             </div>
             
             <div className="pt-4 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
@@ -366,7 +424,7 @@ export default function App() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-6xl sm:text-7xl md:text-9xl font-sans tracking-tighter font-black uppercase text-white leading-none selection:bg-white"
+              className="text-5xl sm:text-6xl md:text-8xl font-sans tracking-tighter font-black uppercase text-white leading-none selection:bg-white"
             >
               CACTUS <span className="text-[#EFFF00] glow-text-yellow">BEAR</span>
             </motion.h1>
@@ -375,9 +433,9 @@ export default function App() {
               initial={{ y: 15, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-zinc-550 font-mono text-xs tracking-[0.25em] h-5 mb-8 text-[#EFFF00] uppercase mt-4"
+              className="text-zinc-400 font-mono text-xs tracking-[0.22em] h-5 mb-8 text-[#EFFF00] uppercase mt-5"
             >
-              RESILIENCE IN THXRN // HEAVYWEIGHT INDUSTRIAL SPECIFICATIONS
+              HEAVYWEIGHT INDUSTRIAL SPECIFICATIONS // NIGERIAN ATELIER
             </motion.p>
 
             <motion.div
@@ -428,29 +486,31 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Dynamic Categories Tab filters */}
-              <div className="flex flex-wrap gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none max-w-max">
-                {(["All", "Outerwear", "Tees", "Headwear"] as const).map((cat) => {
-                  const isChose = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-4 py-2 font-mono text-[10px] tracking-widest transition-colors rounded-none ${
-                        isChose
-                          ? "bg-white text-black font-bold"
-                          : "text-zinc-500 hover:text-white"
-                      }`}
-                    >
-                      {cat.toUpperCase()}
-                    </button>
-                  );
-                })}
+              {/* Dynamic Categories Tab filters with horizontal swipe for mobile */}
+              <div className="w-full overflow-x-auto scrollbar-none pb-2 md:pb-0">
+                <div className="flex gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none w-max max-w-full">
+                  {(["All", "Outerwear", "Tees", "Headwear"] as const).map((cat) => {
+                    const isChose = selectedCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-4 py-2 font-mono text-[10px] tracking-widest transition-colors rounded-none whitespace-nowrap cursor-pointer ${
+                          isChose
+                            ? "bg-white text-black font-bold"
+                            : "text-zinc-500 hover:text-white"
+                        }`}
+                      >
+                        {cat.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Core Products Grid mapping */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Core Products Grid mapping with dense 2-column layout for mobile */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {filteredProducts.map((prod) => (
                 <ProductCard
                   key={prod.id}
@@ -656,13 +716,13 @@ export default function App() {
           {/* Trademark details */}
           <div className="flex flex-col gap-2">
             <span className="font-sans font-black text-white text-sm tracking-wider uppercase">[ CACTUS BEAR ]</span>
-            <span>EXPERIMENTAL PREMIUM APPAREL</span>
-            <span>LONDON & CHESHIRE DESIGN STUDIO</span>
+            <span>HEAVYWEIGHT INDUSTRIAL SPECIFICATIONS</span>
+            <span>LAGOS & YABA EXP-DESIGN ATELIER, NIGERIA</span>
           </div>
 
           <div className="flex flex-col md:items-end gap-1 text-zinc-500">
             <span>Cactus Bear Studio</span>
-            <span>Premium Streetwear & Heavyweight Garments</span>
+            <span>Lagos Streetwear & Heavyweight Garments</span>
             <span>© 2026 CACTUS BEAR APPAREL GROUP. ALL RIGHTS RESERVED.</span>
           </div>
 

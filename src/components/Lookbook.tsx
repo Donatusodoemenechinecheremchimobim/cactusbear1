@@ -87,8 +87,8 @@ export default function Lookbook() {
       {/* Decorative Ticker Tape scroller 1 */}
       <div className="w-full overflow-hidden border-y border-zinc-900 py-3 bg-[#050505] absolute top-0 left-0">
         <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite] font-mono text-[9px] text-[#EFFF00]/60 tracking-[0.25em]">
-          <span>CACTUS BEAR // HEAVYWEIGHT PREMIUM STREETWEAR // 100% ORGANIC COTTON // LONDON DESIGN STUDIO // </span>
-          <span>CACTUS BEAR // HEAVYWEIGHT PREMIUM STREETWEAR // 100% ORGANIC COTTON // LONDON DESIGN STUDIO // </span>
+          <span>CACTUS BEAR // HEAVYWEIGHT PREMIUM STREETWEAR // 100% SUPIMA COTTON // LAGOS YABA EXP-STUDIO // </span>
+          <span>CACTUS BEAR // HEAVYWEIGHT PREMIUM STREETWEAR // 100% SUPIMA COTTON // LAGOS YABA EXP-STUDIO // </span>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export default function Lookbook() {
                     FINELY PRINTED & FINISHED
                   </h3>
                   <p className="text-zinc-500 text-xs font-sans leading-relaxed max-w-md">
-                    To maintain complete control over our quality standards, Cactus Bear avoids fast-fashion mass production. Every garment is printed, hand-inspected, and individually wrapped by our team before dispatch. This is our promise of authentic premium streetwear.
+                    To maintain complete control over our quality standards, Cactus Bear avoids fast-fashion mass production. Every garment is designed, printed, hand-inspected, and individually wrapped by our team in Lagos before dispatch. This is our promise of authentic premium streetwear.
                   </p>
                 </div>
                 <div className="flex gap-4 mt-6">

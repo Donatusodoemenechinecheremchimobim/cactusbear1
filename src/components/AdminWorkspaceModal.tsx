@@ -28,6 +28,8 @@ export default function AdminWorkspaceModal({
   const [tDescription, setTDescription] = useState<string>("");
   const [tIsActivated, setTIsActivated] = useState<boolean>(true);
   const [tNotifyEmails, setTNotifyEmails] = useState<string[]>([]);
+  const [tAdminWhatsapp, setTAdminWhatsapp] = useState<string>("2348123456789");
+  const [tAdminEmail, setTAdminEmail] = useState<string>("chibundusadiq@gmail.com");
   const [saveConfirmed, setSaveConfirmed] = useState<boolean>(false);
 
   // Form states for creating a new product
@@ -70,6 +72,8 @@ export default function AdminWorkspaceModal({
         setTDescription(timerData.description);
         setTIsActivated(timerData.isActivated);
         setTNotifyEmails(timerData.notifyEmails || []);
+        if (timerData.adminWhatsapp) setTAdminWhatsapp(timerData.adminWhatsapp);
+        if (timerData.adminEmail) setTAdminEmail(timerData.adminEmail);
       } catch (err) {
         console.error("Failed to load admin db configurations:", err);
       }
@@ -191,7 +195,9 @@ export default function AdminWorkspaceModal({
       targetDate: tTargetDate,
       description: tDescription.trim(),
       isActivated: tIsActivated,
-      notifyEmails: tNotifyEmails
+      notifyEmails: tNotifyEmails,
+      adminWhatsapp: tAdminWhatsapp.trim(),
+      adminEmail: tAdminEmail.trim()
     });
     setSaveConfirmed(true);
     setTimeout(() => setSaveConfirmed(false), 3000);
@@ -209,7 +215,9 @@ export default function AdminWorkspaceModal({
       targetDate: tTargetDate,
       description: tDescription.trim(),
       isActivated: tIsActivated,
-      notifyEmails: updatedEmails
+      notifyEmails: updatedEmails,
+      adminWhatsapp: tAdminWhatsapp.trim(),
+      adminEmail: tAdminEmail.trim()
     });
     onRefreshProducts();
   };
@@ -757,6 +765,44 @@ export default function AdminWorkspaceModal({
                         className="bg-zinc-950 border border-zinc-900 py-2 px-3 font-mono text-xs focus:border-[#EFFF00] text-white h-24 resize-none"
                         placeholder="Detail materials, special stitching patterns or release rules..."
                       />
+                    </div>
+
+                    {/* IMMEDIATE ORDER NOTIFICATIONS CHANNELS */}
+                    <div className="border-t border-zinc-900 pt-4 mt-2 flex flex-col gap-4">
+                      <span className="text-xs font-mono text-[#EFFF00] tracking-widest block uppercase">
+                        ✦ ORDER NOTIFICATION ROUTING CONFIG
+                      </span>
+                      <p className="font-sans text-zinc-500 text-[11px] leading-relaxed">
+                        Specify the exact WhatsApp telephone number and email inbox address designated to dynamically receive customer pre-order sheets immediately when booking events occur:
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">ADMIN INSTANT WHATSAPP NUMBER</label>
+                          <input
+                            required
+                            type="text"
+                            value={tAdminWhatsapp}
+                            onChange={(e) => setTAdminWhatsapp(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-900 py-2 px-3 font-mono text-xs focus:border-[#EFFF00] text-[#EFFF00]"
+                            placeholder="e.g. 2348123456789"
+                          />
+                          <span className="font-mono text-[8px] text-zinc-600 mt-0.5">Numeric integers only, including country code (no + or spaces)</span>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <label className="font-mono text-[9px] text-zinc-500 uppercase">ADMIN NOTIFICATIONS EMAIL</label>
+                          <input
+                            required
+                            type="email"
+                            value={tAdminEmail}
+                            onChange={(e) => setTAdminEmail(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-900 py-2 px-3 font-mono text-xs focus:border-[#EFFF00] text-white"
+                            placeholder="you@email.com"
+                          />
+                          <span className="font-mono text-[8px] text-zinc-600 mt-0.5">Receives pre-population templates upon customer booking matches</span>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-2 pt-2 border-t border-zinc-900">
