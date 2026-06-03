@@ -17,7 +17,9 @@ import {
   X,
   Clock,
   Package,
-  Search
+  Search,
+  User,
+  Home
 } from "lucide-react";
 
 import { CartItem, ProductCat } from "./types";
@@ -40,6 +42,7 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<ProductCat | "All">("All");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [headerSearchQuery, setHeaderSearchQuery] = useState<string>("");
@@ -315,7 +318,7 @@ export default function App() {
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
   return (
-    <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between">
+    <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between pb-16 md:pb-0">
       
       {/* GLOBAL BACKGROUND NOISE & SCANS GRID */}
       <div className="fixed inset-0 bg-[#020202] pointer-events-none z-0 overflow-hidden">
@@ -425,45 +428,101 @@ export default function App() {
           </div>
 
           {currentUser ? (
-            <div className="hidden md:flex items-center gap-2 bg-zinc-950 border border-zinc-900 px-3 py-1 text-xs">
+            <div className="relative hidden md:block">
               <button
-                onClick={() => setOrderHistoryOpen(true)}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                title="Inspect account purchase logs"
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] px-3 py-1.5 transition-all outline-none rounded-none cursor-pointer"
+                title="Account ledger and trackers"
               >
                 <img
-                  src={currentUser.photoURL}
+                  src={currentUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.displayName}`}
                   alt={currentUser.displayName}
-                  className="w-5 h-5 rounded-full border border-[#EFFF00]/30"
+                  className="w-5 h-5 rounded-full border border-[#EFFF00]/40 flex-shrink-0 object-cover"
                   referrerPolicy="no-referrer"
                 />
-                <span className="font-mono text-[9px] text-zinc-400 hidden sm:inline uppercase hover:text-white transition-colors">
-                  {currentUser.displayName}
+                <span className="font-mono text-[9px] tracking-wider text-zinc-300 uppercase truncate max-w-[80px]">
+                  {currentUser.displayName.split(" ")[0]}
                 </span>
-                <span className="text-[#EFFF00] font-mono text-[9px] uppercase tracking-wider pl-2 border-l border-zinc-900 cursor-pointer">
-                  [ LEDGER ]
-                </span>
+                <span className="text-zinc-600 text-[8px]">▼</span>
               </button>
-              
-              {currentUser.isAdmin && (
-                <button
-                  onClick={() => setAdminOpen(true)}
-                  className="bg-[#EFFF00] hover:bg-yellow-400 text-black font-mono font-black text-[9px] px-2.5 py-1 uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  ADMIN
-                </button>
-              )}
 
-              <button
-                onClick={() => {
-                  authService.signOut();
-                  setCurrentUser(null);
-                  setAdminOpen(false);
-                }}
-                className="text-red-400 hover:text-red-300 font-mono text-[9px] uppercase tracking-widest pl-2 border-l border-zinc-900 cursor-pointer"
-              >
-                OUT
-              </button>
+              {/* FLOATING ACTION LEDGER DROPDOWN */}
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-45 bg-transparent" 
+                      onClick={() => setProfileDropdownOpen(false)} 
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 mt-2 w-56 z-50 bg-[#080809] border border-zinc-800 shadow-2xl p-4 font-mono text-[10px]"
+                    >
+                      <div className="border-b border-zinc-900 pb-2.5 mb-2 px-1">
+                        <span className="text-zinc-550 block text-[8px] tracking-wider uppercase">SIGNED IN AS</span>
+                        <span className="text-[#EFFF00] block text-[11px] font-sans font-bold uppercase truncate tracking-tight">{currentUser.displayName}</span>
+                        <span className="text-zinc-500 block text-[8px] truncate mt-0.5">{currentUser.email}</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setOrderHistoryOpen(true);
+                          }}
+                          className="w-full text-left py-2 px-2.5 rounded-none hover:bg-zinc-950 hover:text-[#EFFF00] transition-all flex items-center justify-between cursor-pointer text-zinc-300"
+                        >
+                          <span>ACCOUNT LEDGER</span>
+                          <span className="text-zinc-650">➔</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setOrdersLookupOpen(true);
+                          }}
+                          className="w-full text-left py-2 px-2.5 rounded-none hover:bg-zinc-950 hover:text-[#EFFF00] transition-all flex items-center justify-between cursor-pointer text-zinc-300"
+                        >
+                          <span>ORDER TRACKER</span>
+                          <span className="text-zinc-650">➔</span>
+                        </button>
+
+                        {currentUser.isAdmin && (
+                          <button
+                            onClick={() => {
+                              setProfileDropdownOpen(false);
+                              setAdminOpen(true);
+                            }}
+                            className="w-full text-left py-2 px-2.5 rounded-none bg-[#EFFF00]/5 text-white hover:bg-[#EFFF00] hover:text-black font-black transition-all flex items-center justify-between cursor-pointer"
+                          >
+                            <span className="text-[#EFFF00] uppercase">ADMIN WORKSPACE</span>
+                            <span className="text-zinc-500">❖</span>
+                          </button>
+                        )}
+
+                        <div className="h-px bg-zinc-900 my-1" />
+
+                        <button
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            authService.signOut();
+                            setCurrentUser(null);
+                            setAdminOpen(false);
+                            addToast("DISCONNECTED DECK", "info");
+                          }}
+                          className="w-full text-left py-2 px-2.5 rounded-none hover:bg-red-950/20 text-red-400 hover:text-red-300 transition-all flex items-center justify-between cursor-pointer"
+                        >
+                          <span>LOGOUT DECK</span>
+                          <span>✖</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <button
@@ -475,31 +534,13 @@ export default function App() {
             </button>
           )}
 
-          {/* Order tracking lookup trigger */}
-          <button
-            onClick={() => setOrdersLookupOpen(true)}
-            className="hidden md:flex items-center gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
-          >
-            <Clock size={12} className="text-[#EFFF00]" />
-            <span>TRACKER</span>
-          </button>
-
-          {/* Vault cart trigger button */}
+          {/* Vault cart trigger button - Hidden on mobile as it's persistently on bottom navbar */}
           <button
             onClick={() => setCartOpen(true)}
-            className="flex items-center gap-1.5 sm:gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-3 sm:px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
+            className="hidden md:flex items-center gap-1.5 sm:gap-2 border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] font-mono text-[10px] tracking-widest px-3 sm:px-4 py-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
           >
             <ShoppingBag size={12} className="text-[#EFFF00]" />
-            <span><span className="hidden xs:inline">BAG</span> ({cartItemsCount})</span>
-          </button>
-
-          {/* Mobile hamburger menu toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex md:hidden items-center justify-center border border-zinc-900 bg-zinc-950 hover:border-[#EFFF00] p-2 hover:text-[#EFFF00] transition-all rounded-none cursor-pointer"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X size={13} className="text-[#EFFF00]" /> : <Menu size={13} className="text-[#EFFF00]" />}
+            <span>BAG ({cartItemsCount})</span>
           </button>
         </div>
       </header>
@@ -512,7 +553,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="fixed inset-x-0 top-[65px] z-30 bg-black/98 border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg max-h-[calc(100vh-65px)] overflow-y-auto"
+            className="fixed inset-x-0 top-[65px] bottom-[56px] z-30 bg-black/98 border-t border-b border-zinc-900 py-8 px-6 flex flex-col gap-6 md:hidden shadow-2xl backdrop-blur-lg justify-between overflow-y-auto"
           >
             <span className="text-[9px] font-mono text-zinc-500 tracking-[0.3em] uppercase block border-b border-zinc-950 pb-2">
               ✦ NAVIGATE SHOP
@@ -1137,6 +1178,109 @@ export default function App() {
             </motion.div>
           ))}
         </AnimatePresence>
+      </div>
+
+      {/* MOBILE PERSISTENT BOTTOM NAVIGATION TAB BAR */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900 py-2.5 px-4 flex md:hidden justify-around items-center gap-1 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+        
+        {/* TAB 01: HOME */}
+        <button
+          onClick={() => {
+            setSelectedProductId(null);
+            setActivePage("home");
+            setMobileMenuOpen(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+            activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+          }`}
+        >
+          <Home size={18} className={activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">HOME</span>
+        </button>
+
+        {/* TAB 02: CATALOG / SHOP */}
+        <button
+          onClick={() => {
+            setSelectedProductId(null);
+            setActivePage("collection");
+            setMobileMenuOpen(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+            activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+          }`}
+        >
+          <Package size={18} className={activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550"} />
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">CATALOG</span>
+        </button>
+
+        {/* TAB 03: STITCH DESIGN LAB */}
+        <button
+          onClick={() => {
+            setSelectedProductId(null);
+            setActivePage("home");
+            setMobileMenuOpen(false);
+            // Direct scroll to customizer-lab
+            setTimeout(() => {
+              const el = document.getElementById("customizer-lab");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth" });
+              }
+            }, 80);
+          }}
+          className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors outline-none"
+        >
+          <div className="relative">
+            <Cpu size={18} />
+            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-[#EFFF00] animate-pulse" />
+          </div>
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">STITCH LAB</span>
+        </button>
+
+        {/* TAB 04: BAG (CART) */}
+        <button
+          onClick={() => {
+            setMobileMenuOpen(false);
+            setCartOpen(true);
+          }}
+          className="flex flex-col items-center gap-1 flex-1 cursor-pointer text-zinc-550 hover:text-white transition-colors relative outline-none"
+        >
+          <div className="relative">
+            <ShoppingBag size={18} />
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-1.5 -right-2.5 bg-[#EFFF00] text-black font-mono text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black shadow-lg">
+                {cartItemsCount}
+              </span>
+            )}
+          </div>
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">BAG</span>
+        </button>
+
+        {/* TAB 05: ACCOUNT DECK PORTAL / MENU */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
+            mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
+          }`}
+        >
+          {currentUser ? (
+            <img
+              src={currentUser.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.displayName}`}
+              alt={currentUser.displayName}
+              className={`w-5 h-5 rounded-full border bg-zinc-950 ${
+                mobileMenuOpen ? "border-[#EFFF00]" : "border-zinc-800"
+              } object-cover`}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <User size={18} className={mobileMenuOpen ? "text-[#EFFF00]" : "text-zinc-550"} />
+          )}
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider">
+            {currentUser ? "ACCOUNT" : "MENU"}
+          </span>
+        </button>
+
       </div>
 
     </div>
