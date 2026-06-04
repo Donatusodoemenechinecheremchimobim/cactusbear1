@@ -76,8 +76,11 @@ if (isFirebaseConfigured) {
     db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || "(default)");
     auth = getAuth(app);
     try {
-      storage = getStorage(app);
-      console.log("Firebase Storage initialized successfully.");
+      const bucketUrl = firebaseConfig.storageBucket 
+        ? (firebaseConfig.storageBucket.startsWith("gs://") ? firebaseConfig.storageBucket : `gs://${firebaseConfig.storageBucket}`)
+        : undefined;
+      storage = getStorage(app, bucketUrl);
+      console.log("Firebase Storage initialized successfully with bucket:", bucketUrl);
     } catch (stErr) {
       console.warn("Storage initialization failed (likely bucket configuration missing):", stErr);
     }

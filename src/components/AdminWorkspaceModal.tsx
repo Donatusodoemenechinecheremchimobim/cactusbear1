@@ -959,10 +959,15 @@ export default function AdminWorkspaceModal({
 
                     <button
                       type="submit"
-                      disabled={isPublishing}
-                      className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] disabled:bg-zinc-800 disabled:text-zinc-550 text-black font-mono font-black text-xs py-4 tracking-widest uppercase rounded-none mt-2 cursor-pointer flex items-center justify-center gap-2"
+                      disabled={isPublishing || isUploadingImage}
+                      className="w-full bg-[#EFFF00] hover:bg-[#EFFF22] disabled:bg-zinc-900 disabled:text-zinc-500 text-black font-mono font-black text-xs py-4 tracking-widest uppercase rounded-none mt-2 cursor-pointer flex items-center justify-center gap-2"
                     >
-                      {isPublishing ? (
+                      {isUploadingImage ? (
+                        <>
+                          <RefreshCw className="animate-spin text-zinc-500" size={14} />
+                          UPLOADING DESIGN PICTURE...
+                        </>
+                      ) : isPublishing ? (
                         <>
                           <RefreshCw className="animate-spin text-black" size={14} />
                           PUBLISHING TO ARCHIVE...
