@@ -37,58 +37,49 @@ export default function GoogleAuthModal({
       errorText.toLowerCase().includes("unauthorized-domain") ||
       errorText.toLowerCase().includes("auth/unauthorized-domain");
 
-    if (isUnauthorizedDomain) {
+    const isPopupIssue =
+      errorText.toLowerCase().includes("popup-closed-by-user") ||
+      errorText.toLowerCase().includes("popup-blocked") ||
+      errorText.toLowerCase().includes("cancelled") ||
+      errorText.toLowerCase().includes("canceled") ||
+      errorText.toLowerCase().includes("popup");
+
+    if (isUnauthorizedDomain || isPopupIssue) {
       const currentHost = typeof window !== "undefined" ? window.location.hostname : "ais-dev-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app";
       return (
-        <div className="border border-red-500/40 bg-red-950/15 p-4 font-mono text-[10px] leading-relaxed text-zinc-350 mt-3 border-l-2 border-l-red-500">
-          <span className="text-red-400 font-bold block uppercase mb-1.5 tracking-wider">
-            ⚠ FIREBASE AUTH: UNAUTHORIZED DOMAIN
+        <div className="border border-[#EFFF00]/30 bg-amber-950/10 p-4 font-mono text-[10px] leading-relaxed text-zinc-350 mt-3 border-l-2 border-l-[#EFFF00]">
+          <span className="text-[#EFFF00] font-bold block uppercase mb-1.5 tracking-wider">
+            {isUnauthorizedDomain ? "⚠ FIREBASE AUTH: UNAUTHORIZED DOMAIN" : "⚠ BROWSER POPUP BLOCKED / CLOSED"}
           </span>
-          <span className="block mb-2 text-zinc-400">
-            Firebase Authentication requires you to register this domain in your Firebase project before Google / GitHub login can handle requests.
-          </span>
-          <span className="block font-bold text-[#EFFF00] uppercase mb-1 tracking-wider">
-            SOLUTION CHECKLIST:
-          </span>
-          <ol className="list-decimal list-inside space-y-1 text-zinc-400 mb-3.5">
-            <li className="pl-1">
-              Open your{" "}
-              <a
-                href="https://console.firebase.google.com/project/gen-lang-client-0678487394/authentication/settings"
-                target="_blank"
-                rel="noreferrer"
-                className="text-white hover:text-[#EFFF00] underline font-bold"
-              >
-                Firebase Console Settings Page
-              </a>
-            </li>
-            <li className="pl-1">Navigate to <strong className="text-white">Authorized Domains</strong> (under Authentication → Settings)</li>
-            <li className="pl-1">Click <strong className="text-white">Add domain</strong> and enter:</li>
-          </ol>
+          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-2">
+            {isUnauthorizedDomain 
+              ? "Firebase Authentication requires registering this staging domain in your Firebase project configuration."
+              : "Popups are often blocked, cancelled, or restricted by browsers inside the developer preview sandbox iframe."}
+          </p>
           
-          <div className="bg-black border border-zinc-900 p-2.5 font-mono text-[9px] text-[#EFFF00] break-all flex flex-col gap-1.5 mb-3">
-            <div className="flex justify-between items-center px-1 text-[8px] text-zinc-600 tracking-wider uppercase font-sans font-bold">
-              <span>Authorized Domain Inputs</span>
-              <span>Double-click to copy</span>
-            </div>
-            <code className="bg-zinc-950 p-1.5 border border-zinc-900/60 select-all cursor-pointer hover:text-white transition-colors">
-              {currentHost}
-            </code>
-            <code className="bg-zinc-950 p-1.5 border border-zinc-900/60 select-all cursor-pointer hover:text-white transition-colors">
-              ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app
-            </code>
-          </div>
-
-          <div className="text-[9.5px] text-zinc-500 leading-normal mb-3">
-            💡 <strong className="text-zinc-400">TIP:</strong> Adding these domains takes 10 seconds. Once saved in Firebase, click Google Sign-In again to login instantly.
-          </div>
+          {isUnauthorizedDomain && (
+            <>
+              <span className="block font-bold text-white uppercase mb-1 tracking-wider font-mono text-[9px]">
+                QUICK SOLUTION:
+              </span>
+              <ol className="list-decimal list-inside space-y-1 text-zinc-400 mb-3 ml-1">
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a></li>
+                <li>Navigate to <strong className="text-white">Auth → Settings → Authorized Domains</strong></li>
+                <li>Add these staging preview URLs:</li>
+              </ol>
+              <div className="bg-black border border-zinc-900 p-2 font-mono text-[9px] text-[#EFFF00] break-all flex flex-col gap-1 mb-3">
+                <code>{currentHost}</code>
+                <code>ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app</code>
+              </div>
+            </>
+          )}
 
           <div className="border-t border-zinc-900 pt-3 flex flex-col gap-2.5">
             <span className="text-[9px] font-bold text-[#EFFF00] uppercase tracking-wider block">
-              ⚡ SECURE GATEWAY FALLBACK (DOMAIN BYPASS)
+              ⚡ LIVE GATEWAY BYPASS (RECOMMENDED)
             </span>
-            <p className="text-zinc-400 text-[9px] leading-relaxed font-sans m-0">
-              Your staging/preview domain hasn't been registered in Firebase Console yet. To authenticate without registering domains, enter your email below to connect straight to the live database using direct Firebase Auth:
+            <p className="text-zinc-400 text-[9px] leading-relaxed m-0">
+              For a 100% reliable login without browser popup restrictions, enter your email below to connect straight to the live database using secure authentication:
             </p>
             <div className="flex gap-2 items-center">
               <input
@@ -96,7 +87,7 @@ export default function GoogleAuthModal({
                 placeholder="you@domain.com"
                 value={bypassEmail}
                 onChange={(e) => setBypassEmail(e.target.value)}
-                className="flex-1 bg-black text-[#EFFF00] border border-zinc-800 focus:border-[#EFFF00] px-3 py-2 font-mono text-[10.5px] outline-none"
+                className="flex-1 bg-black text-[#EFFF00] border border-zinc-805 px-3 py-2 font-mono text-[10.5px] outline-none"
               />
               <button
                 type="button"
@@ -125,14 +116,14 @@ export default function GoogleAuthModal({
                 BYPASS & LOGIN
               </button>
             </div>
-            <div className="flex justify-between items-center text-[8.5px] text-zinc-500 font-mono mt-0.5">
-              <span>Defaults to: chibundusadiq@gmail.com</span>
+            <div className="flex justify-between items-center text-[8.5px] text-zinc-500 font-mono mt-0.5 animate-fadeIn">
+              <span>Defaults to: chibundusadiq@gmail.com (Admin)</span>
               <button
                 type="button"
                 onClick={() => setBypassEmail("chibundusadiq@gmail.com")}
                 className="text-zinc-400 hover:text-white underline cursor-pointer"
               >
-                Use Admin Email
+                Reset to Admin Email
               </button>
             </div>
           </div>

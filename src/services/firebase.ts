@@ -92,7 +92,7 @@ if (isFirebaseConfigured) {
 /**
  * Compresses an image client-side to ensure small document storage footprints
  */
-export function compressImage(file: File, maxWidth = 800, maxHeight = 850, quality = 0.82): Promise<string> {
+export function compressImage(file: File, maxWidth = 480, maxHeight = 480, quality = 0.6): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
