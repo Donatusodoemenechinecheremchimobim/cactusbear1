@@ -136,14 +136,18 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           )}
         </AnimatePresence>
 
-        {/* Dynamic Vector schematic of the item with responsive sizes */}
-        <div className="relative w-32 h-32 sm:w-44 sm:h-44 transition-transform duration-500 group-hover:scale-105 flex items-center justify-center">
-          {product.imageUrl ? (
+        {/* Dynamic Vector schematic of the item with responsive sizes or full-bleed magnified product image */}
+        <div className={`transition-transform duration-500 group-hover:scale-105 flex items-center justify-center ${
+          (selectedColor.imageUrl || product.imageUrl) 
+            ? "absolute inset-0 w-full h-full" 
+            : "relative w-32 h-32 sm:w-44 sm:h-44"
+        }`}>
+          {(selectedColor.imageUrl || product.imageUrl) ? (
             <img
-              src={product.imageUrl}
+              src={selectedColor.imageUrl || product.imageUrl}
               alt={product.name}
               referrerPolicy="no-referrer"
-              className="max-w-full max-h-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)] rounded-none"
+              className="w-full h-full object-cover"
             />
           ) : (
             <>
@@ -373,7 +377,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           )}
 
           {/* Micro embroidery branding icon over vector garment / product picture (Precisely positioned per garment ID) */}
-          {!product.imageUrl && (
+          {!(selectedColor.imageUrl || product.imageUrl) && (
             <div
               className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 group-hover:scale-110 ${
                 isHovered ? "opacity-100" : "opacity-80"

@@ -2,7 +2,7 @@ import { Product, CartItem, Review } from "../types";
 import { CACTUS_BEAR_PRODUCTS } from "../data";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
-  getFirestore, 
+  initializeFirestore, 
   collection, 
   doc, 
   getDocs, 
@@ -73,7 +73,10 @@ export let storage: any = null;
 if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId || "(default)");
+    db = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false
+    } as any, (firebaseConfig as any).firestoreDatabaseId || "(default)");
     auth = getAuth(app);
     try {
       const bucketUrl = firebaseConfig.storageBucket 
@@ -166,7 +169,7 @@ export async function uploadProductImage(file: File): Promise<string> {
       })();
 
       const timeoutPromise = new Promise<string>((_, reject) =>
-        setTimeout(() => reject(new Error("Firebase Storage operation timed out")), 2500)
+        setTimeout(() => reject(new Error("Firebase Storage operation timed out")), 20000)
       );
 
       const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
@@ -367,6 +370,24 @@ class DatabaseService {
           for (const item of CACTUS_BEAR_PRODUCTS) {
             await setDoc(doc(db, "products", item.id), item);
             list.push(item);
+          }
+        } else {
+          // Proactively sync and update defaults if Firestore records are missing colorway images
+          for (const item of CACTUS_BEAR_PRODUCTS) {
+            const existing = list.find((p) => p.id === item.id);
+            if (existing) {
+              const needsUpdate = item.colors.some(
+                (c) => c.imageUrl && !existing.colors.some((ec) => ec.name === c.name && ec.imageUrl)
+              );
+              if (needsUpdate) {
+                console.log(`Updating Firestore product ${item.id} with colorway image assets...`);
+                await setDoc(doc(db, "products", item.id), item);
+                const idx = list.findIndex((p) => p.id === item.id);
+                if (idx !== -1) {
+                  list[idx] = item;
+                }
+              }
+            }
           }
         }
         return list;

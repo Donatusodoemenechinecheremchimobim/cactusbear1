@@ -383,6 +383,9 @@ export default function AdminWorkspaceModal({
   // Custom colors list
   const [colorName, setColorName] = useState<string>("");
   const [colorHex, setColorHex] = useState<string>("#FFFFFF");
+  const [colorImage, setColorImage] = useState<string>("");
+  const [isUploadingColorImage, setIsUploadingColorImage] = useState<boolean>(false);
+  const colorFileInputRef = useRef<HTMLInputElement>(null);
   const [pColors, setPColors] = useState<ApparelColor[]>([
     { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
     { name: "Alabaster White", hex: "#FFFFFF", bgHex: "#FFFFFF" }
@@ -450,9 +453,25 @@ export default function AdminWorkspaceModal({
         name: colorName.trim(),
         hex: colorHex,
         bgHex: colorHex,
-        isYellowTint: colorHex.toLowerCase() === "#efff00"
+        isYellowTint: colorHex.toLowerCase() === "#efff00",
+        imageUrl: colorImage.trim() || undefined
       }]);
       setColorName("");
+      setColorImage("");
+    }
+  };
+
+  const handleColorFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingColorImage(true);
+    try {
+      const uploadedUrl = await uploadProductImage(file);
+      setColorImage(uploadedUrl);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsUploadingColorImage(false);
     }
   };
 
@@ -913,22 +932,36 @@ export default function AdminWorkspaceModal({
                           type="text"
                           value={colorName}
                           onChange={(e) => setColorName(e.target.value)}
-                          className="col-span-6 bg-zinc-950 border border-zinc-900 py-1 px-2 font-mono text-xs focus:border-[#EFFF00]"
+                          className="col-span-4 bg-zinc-950 border border-zinc-900 py-1 px-2 font-mono text-xs focus:border-[#EFFF00]"
                           placeholder="e.g. Army Camo"
                         />
                         <input
                           type="color"
                           value={colorHex}
                           onChange={(e) => setColorHex(e.target.value)}
-                          className="col-span-3 bg-transparent h-7 w-full border border-zinc-900 cursor-pointer p-0"
+                          className="col-span-2 bg-transparent h-7 w-full border border-zinc-900 cursor-pointer p-0"
                         />
                         <button
                           type="button"
+                          onClick={() => colorFileInputRef.current?.click()}
+                          className="col-span-3 bg-zinc-950 border border-zinc-900 hover:border-zinc-700 text-zinc-400 hover:text-white font-mono text-[9px] truncate"
+                        >
+                          {isUploadingColorImage ? "UP..." : colorImage ? "✓ IMG" : "+ IMG"}
+                        </button>
+                        <button
+                          type="button"
                           onClick={handleAddColor}
-                          className="col-span-3 bg-zinc-900 hover:bg-zinc-850 text-white font-mono text-[9px] tracking-tighter"
+                          className="col-span-3 bg-[#EFFF00] hover:bg-yellow-450 text-black font-mono font-bold text-[9px]"
                         >
                           ADD CLR
                         </button>
+                        <input
+                          type="file"
+                          ref={colorFileInputRef}
+                          onChange={handleColorFileChange}
+                          accept="image/*"
+                          className="hidden"
+                        />
                       </div>
                       <div className="flex flex-wrap gap-2 mt-1 max-h-20 overflow-y-auto bg-zinc-950 p-2 border border-zinc-900">
                         {pColors.map((color, i) => (
@@ -936,7 +969,11 @@ export default function AdminWorkspaceModal({
                               key={i}
                               className="bg-black border border-zinc-900 px-2 py-1 flex items-center gap-1.5 font-mono text-[9px]"
                             >
-                              <span className="w-2.5 h-2.5 inline-block border border-zinc-850" style={{ backgroundColor: color.hex }} />
+                              {color.imageUrl ? (
+                                <img src={color.imageUrl} className="w-3.5 h-3.5 object-cover border border-zinc-800" referrerPolicy="no-referrer" />
+                              ) : (
+                                <span className="w-2.5 h-2.5 inline-block border border-zinc-850" style={{ backgroundColor: color.hex }} />
+                              )}
                               <span className="truncate max-w-[80px]">{color.name}</span>
                               <button
                                 type="button"

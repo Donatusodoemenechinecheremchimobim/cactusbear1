@@ -198,19 +198,19 @@ export default function ProductDetailPage({
                 }}
                 layoutId={`product-image-${product.id}`}
               >
-                {product.imageUrl ? (
+                {(selectedColor.imageUrl || product.imageUrl) ? (
                   <img
-                    src={product.imageUrl}
+                    src={selectedColor.imageUrl || product.imageUrl}
                     alt={product.name}
                     referrerPolicy="no-referrer"
-                    className="max-w-full max-h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.85)]"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <RenderGarmentSVG id={product.id} colorHex={selectedColor.hex} mockupType={product.mockupType} isHovered={true} />
                 )}
 
                 {/* Embroidered Micro Logo badge overlay */}
-                {!product.imageUrl && (
+                {!(selectedColor.imageUrl || product.imageUrl) && (
                   <div
                     className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none w-[42px] h-[24px]"
                     style={{
@@ -624,21 +624,25 @@ export default function ProductDetailPage({
               onClick={() => onSelectProduct(p.id)}
               className="bg-black border border-zinc-900 p-4 transition-all hover:border-white/20 flex flex-col justify-between cursor-pointer group"
             >
-              <div className="w-full h-36 bg-zinc-950/40 p-4 flex items-center justify-center relative overflow-hidden mb-4">
+              <div className="w-full h-36 bg-zinc-950/40 flex items-center justify-center relative overflow-hidden mb-4">
                 <div 
                   className="absolute inset-0 filter blur-2xl opacity-10 transition-opacity group-hover:opacity-20 rounded-full w-12 h-12 m-auto pointer-events-none"
                   style={{ backgroundColor: p.colors[0].hex }}
                 />
-                <div className="w-24 h-24 relative z-10 transition-transform group-hover:scale-105">
-                  {p.imageUrl ? (
+                <div className={`transition-transform group-hover:scale-105 ${
+                  (p.colors?.[0]?.imageUrl || p.imageUrl)
+                    ? "absolute inset-0 w-full h-full"
+                    : "w-24 h-24 relative z-10"
+                }`}>
+                  {(p.colors?.[0]?.imageUrl || p.imageUrl) ? (
                     <img 
-                      src={p.imageUrl} 
+                      src={p.colors?.[0]?.imageUrl || p.imageUrl} 
                       alt={p.name} 
                       referrerPolicy="no-referrer"
-                      className="max-w-full max-h-full object-contain"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <RenderGarmentSVG id={p.id} colorHex={p.colors[0].hex} mockupType={p.mockupType} />
+                    <RenderGarmentSVG id={p.id} colorHex={p.colors[0]?.hex || "#fff"} mockupType={p.mockupType} />
                   )}
                 </div>
               </div>

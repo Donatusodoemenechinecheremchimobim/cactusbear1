@@ -3,6 +3,7 @@ export interface ApparelColor {
   hex: string;
   bgHex: string;
   isYellowTint?: boolean;
+  imageUrl?: string;
 }
 
 export type ProductCat = "Outerwear" | "Tees" | "Headwear" | "Accessories";

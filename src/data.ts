@@ -40,8 +40,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     ],
     sizes: ["S", "M", "L", "XL", "XXL"],
     colors: [
-      { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
-      { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b" }
+      { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d", imageUrl: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=600&auto=format&fit=crop" },
+      { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b", imageUrl: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?q=80&w=600&auto=format&fit=crop" }
     ],
     mockupType: "tee",
     stock: 12
@@ -62,8 +62,8 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     ],
     sizes: ["S", "M", "L"],
     colors: [
-      { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d" },
-      { name: "Bleach White", hex: "#f8f9fa", bgHex: "#f8f9fa" }
+      { name: "Obsidian Black", hex: "#0c0c0d", bgHex: "#0c0c0d", imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=600&auto=format&fit=crop" },
+      { name: "Bleach White", hex: "#f8f9fa", bgHex: "#f8f9fa", imageUrl: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=600&auto=format&fit=crop" }
     ],
     mockupType: "tee",
     stock: 4
@@ -84,9 +84,9 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     ],
     sizes: ["S", "M", "L", "XL", "XXL"],
     colors: [
-      { name: "Obsidian Black", hex: "#0a0a0b", bgHex: "#0a0a0b" },
-      { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b" },
-      { name: "Alpine Forest Green", hex: "#1b3524", bgHex: "#1b3524" }
+      { name: "Obsidian Black", hex: "#0a0a0b", bgHex: "#0a0a0b", imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=600&auto=format&fit=crop" },
+      { name: "Tobacco Earth Brown", hex: "#8a5d3b", bgHex: "#8a5d3b", imageUrl: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop" },
+      { name: "Alpine Forest Green", hex: "#1b3524", bgHex: "#1b3524", imageUrl: "https://images.unsplash.com/photo-1609873814058-a8928924184a?q=80&w=600&auto=format&fit=crop" }
     ],
     mockupType: "hoodie",
     stock: 15
