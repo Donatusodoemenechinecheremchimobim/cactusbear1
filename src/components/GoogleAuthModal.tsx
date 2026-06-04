@@ -242,7 +242,7 @@ export default function GoogleAuthModal({
               {/* Header */}
               <div className="flex justify-between items-center pb-4 border-b border-zinc-900 mb-6">
                 <span className="font-mono text-xs tracking-wider text-[#EFFF00] uppercase font-bold">
-                  STORE SECURE ACCESS
+                  CACTUS BEAR ATELIER ACCESS
                 </span>
                 <button
                   onClick={onClose}
@@ -293,12 +293,12 @@ export default function GoogleAuthModal({
               {/* Title Section */}
               <div className="mb-6">
                 <h3 className="font-sans font-black text-2xl uppercase tracking-tight text-white mb-1">
-                  {activeTab === "social" && <>SIGN IN WITH <span className="text-[#EFFF00]">ID COAUTEUR</span></>}
+                  {activeTab === "social" && <>LOGIN INTO <span className="text-[#EFFF00]">CACTUS BEAR</span></>}
                   {activeTab === "email" && <>USE YOUR <span className="text-[#EFFF00]">EMAIL ADDRESS</span></>}
                   {activeTab === "guest" && <>CONTINUE AS <span className="text-[#EFFF00]">GUEST PATRON</span></>}
                 </h3>
                 <p className="text-zinc-500 text-xs leading-relaxed font-sans mt-1">
-                  {activeTab === "social" && "Log in securely using Google or GitHub to connect your digital wardrobe."}
+                  {activeTab === "social" && "Log in securely using Google or GitHub to browse and purchase your custom streetwear."}
                   {activeTab === "email" && "Log in or register your couture workspace with an email and password."}
                   {activeTab === "guest" && "Browse, preview, customize, and add products with a quick guest session."}
                 </p>

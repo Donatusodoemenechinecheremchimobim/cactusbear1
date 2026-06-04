@@ -160,38 +160,60 @@ export default function App() {
     const unsubscribeAuth = authService.subscribe(async (session) => {
       setCurrentUser(session);
       if (session) {
+        // Load cart gracefully even if database is offline or slow
         try {
-          // User-specific isolated cart from of user database profile
-          const dbCart = await dbService.loadUserCart(session.uid);
+          let dbCart: CartItem[] = [];
+          try {
+            dbCart = await dbService.loadUserCart(session.uid);
+          } catch (err) {
+            console.warn("Failed to load user cart from database, using offline cache.", err);
+          }
+          
           if (dbCart && dbCart.length > 0) {
             setCart(dbCart);
             localStorage.setItem("cactus_bear_cart", JSON.stringify(dbCart));
           } else {
             const savedCart = localStorage.getItem("cactus_bear_cart");
             if (savedCart) {
-              const parsed = JSON.parse(savedCart);
-              if (parsed.length > 0) {
-                await dbService.saveUserCart(session.uid, parsed);
-              }
+              try {
+                const parsed = JSON.parse(savedCart);
+                if (parsed.length > 0) {
+                  setCart(parsed);
+                  await dbService.saveUserCart(session.uid, parsed).catch(e => console.warn("Failed to sync cart", e));
+                }
+              } catch {}
             }
           }
+        } catch (err) {
+          console.error("Cart loading exception:", err);
+        }
 
-          // User-specific isolated wishlist from user database profile
-          const dbWishlist = await dbService.loadUserWishlist(session.uid);
+        // Load wishlist gracefully even if database is offline or slow
+        try {
+          let dbWishlist: string[] = [];
+          try {
+            dbWishlist = await dbService.loadUserWishlist(session.uid);
+          } catch (err) {
+            console.warn("Failed to load user wishlist from database, using offline cache.", err);
+          }
+
           if (dbWishlist && dbWishlist.length > 0) {
             setWishlist(dbWishlist);
             localStorage.setItem("cactus_bear_wishlist", JSON.stringify(dbWishlist));
           } else {
             const savedWishlist = localStorage.getItem("cactus_bear_wishlist");
             if (savedWishlist) {
-              const parsed = JSON.parse(savedWishlist);
-              if (parsed.length > 0) {
-                await dbService.saveUserWishlist(session.uid, parsed);
-              }
+              try {
+                const parsed = JSON.parse(savedWishlist);
+                if (parsed.length > 0) {
+                  setWishlist(parsed);
+                  await dbService.saveUserWishlist(session.uid, parsed).catch(e => console.warn("Failed to sync wishlist", e));
+                }
+              } catch {}
             }
           }
         } catch (err) {
-          console.error("Failed to load user-scoped database values:", err);
+          console.error("Wishlist loading exception:", err);
         }
       } else {
         // Guest mode fallback load values

@@ -14,8 +14,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart, onSelect, isWishlisted, onToggleWishlist }: ProductCardProps) {
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "L");
-  const [selectedColor, setSelectedColor] = useState<ApparelColor>(product.colors[0]);
+  const [selectedSize, setSelectedSize] = useState<string>((product.sizes && product.sizes[0]) || "L");
+  const [selectedColor, setSelectedColor] = useState<ApparelColor>((product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [added, setAdded] = useState<boolean>(false);
   const [adding, setAdding] = useState<boolean>(false);

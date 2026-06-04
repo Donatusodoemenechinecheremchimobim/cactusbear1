@@ -43,8 +43,8 @@ export default function ProductDetailPage({
   currentUser,
   onLoginTrigger
 }: ProductDetailPageProps) {
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || "L");
-  const [selectedColor, setSelectedColor] = useState<ApparelColor>(product.colors[0]);
+  const [selectedSize, setSelectedSize] = useState<string>((product.sizes && product.sizes[0]) || "L");
+  const [selectedColor, setSelectedColor] = useState<ApparelColor>((product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
   const [added, setAdded] = useState<boolean>(false);
   const [adding, setAdding] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"specifications" | "manufacturing" | "shipping">("specifications");
@@ -55,10 +55,18 @@ export default function ProductDetailPage({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoomPos({ x, y });
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+    
+    const clientX = (e.clientX !== undefined && e.clientX !== null && !isNaN(e.clientX)) ? e.clientX : (rect.left + rect.width / 2);
+    const clientY = (e.clientY !== undefined && e.clientY !== null && !isNaN(e.clientY)) ? e.clientY : (rect.top + rect.height / 2);
+
+    const x = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
+    
+    if (!isNaN(x) && !isNaN(y)) {
+      setZoomPos({ x, y });
+    }
   };
 
   const handleShareClick = async () => {
@@ -93,8 +101,8 @@ export default function ProductDetailPage({
   // Scroll to top when changing products
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setSelectedSize(product.sizes[0] || "L");
-    setSelectedColor(product.colors[0]);
+    setSelectedSize((product.sizes && product.sizes[0]) || "L");
+    setSelectedColor((product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
   }, [product]);
 
   const handleAddToCartClick = () => {

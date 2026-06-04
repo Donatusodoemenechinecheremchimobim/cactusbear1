@@ -540,18 +540,37 @@ class DatabaseService {
         if (!Array.isArray(logs)) logs = [];
       } catch {}
 
+      const detailedItemsList = order.items.map((it: any, i: number) => {
+        const pName = it.product?.name || "Premium Item";
+        const sku = it.product?.sku || "N/A";
+        const size = it.selectedSize || "N/A";
+        const color = it.selectedColor?.name || "N/A";
+        const qty = it.quantity || 1;
+        const price = it.product?.price || 0;
+        const total = price * qty;
+        const cPosition = it.customPrintPosition ? ` (Custom Design: ${it.customPrintPosition})` : "";
+        return `[Item ${i + 1}] ${pName}${cPosition}\n` +
+               `   • SKU/ID: ${sku}\n` +
+               `   • Size: ${size}\n` +
+               `   • Color: ${color}\n` +
+               `   • Quantity: ${qty}\n` +
+               `   • Unit Price: $${price} USD\n` +
+               `   • Total for Item: $${total} USD`;
+      }).join("\n\n");
+
       const formattedMessage = 
-        `✦ ATELIER PRE-ORDER DIGEST: ${order.id} ✦\n\n` +
-        `• Customer Pin: ${order.email}\n` +
-        `• Full Name: ${order.name || "Authenticated Patron"}\n` +
-        `• Mobile: ${order.phone || "N/A"}\n` +
-        `• Shipping Dest: ${order.address || "N/A"}, ${order.city || "N/A"} (${order.country || "N/A"})\n` +
-        `• Transacted: ₦${(order.totalPrice * 1500).toLocaleString()} ($${order.totalPrice} USD)\n\n` +
-        `• Core Items:\n` +
-        order.items.map((it: any, i: number) => 
-          `  [${i + 1}] ${it.product?.name || "Premium Item"} - Size: ${it.selectedSize || "N/A"} (${it.selectedColor?.name || "N/A"})`
-        ).join("\n") +
-        `\n\n✦ CRYPTOGRAPHIC ATELIER LEDGER ✦`;
+        `✦ NEW PRE-ORDER DIGEST: ${order.id} ✦\n\n` +
+        `• Customer Email: ${order.email}\n` +
+        `• Customer Name: ${order.name || "Authenticated Patron"}\n` +
+        `• Contact Phone: ${order.phone || "N/A"}\n\n` +
+        `• Shipping Address:\n` +
+        `  ${order.address || "N/A"}\n` +
+        `  City: ${order.city || "N/A"}\n` +
+        `  Country: ${order.country || "N/A"}\n\n` +
+        `• Total Value NGN (₦1,500/$1 Conversion): ₦${(order.totalPrice * 1500).toLocaleString()}\n` +
+        `• Total Value USD: $${order.totalPrice} USD\n\n` +
+        `• Items Breakdown:\n\n${detailedItemsList}\n\n` +
+        `✦ END OF CACTUS BEAR RECORD TRANSACTIONS ✦`;
 
       // 1. Direct Webhook Integration
       const webhookEnabled = localStorage.getItem("cactus_bear_autom_webhook_enabled") === "true";
@@ -613,15 +632,21 @@ class DatabaseService {
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({
-            _subject: `✦ NEW CACTUS BEAR PRE-ORDER: ${order.id} ✦`,
+            _subject: `✦ NEW CACTUS BEAR ORDER [ID: ${order.id}] - ${order.name || order.email} ✦`,
             recipient: emailTarget,
             message: formattedMessage,
+            name: order.name || "Authenticated Patron",
+            email: order.email,
+            phone: order.phone || "N/A",
+            shippingAddress: order.address || "N/A",
+            city: order.city || "N/A",
+            country: order.country || "N/A",
             orderId: order.id,
-            buyer: order.name || order.email,
-            buyerPhone: order.phone || "N/A",
             totalNgn: `₦${(order.totalPrice * 1500).toLocaleString()}`,
             totalUsd: `$${order.totalPrice}`,
-            itemsOrdered: order.items.map((it: any) => `${it.product?.name} (${it.selectedSize})`).join(", ")
+            itemsOrdered: order.items.map((it: any) => `${it.product?.name} (Size: ${it.selectedSize || "N/A"}, Color: ${it.selectedColor?.name || "N/A"}, Qty: ${it.quantity || 1})`).join("; "),
+            itemsOrderedDetailed: detailedItemsList,
+            creationDate: order.createdAt || new Date().toISOString()
           })
         })
         .then(res => {

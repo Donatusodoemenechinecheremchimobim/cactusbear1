@@ -170,8 +170,8 @@ export default function AdminWorkspaceModal({
       status: "Processing",
       totalPrice: 420,
       items: [
-        { product: { name: "01 // OVERSIZED HOODIE", price: 210, sku: "CB-HD-01" }, selectedSize: "XL", selectedColor: { name: "Obsidian Black", hex: "#0c0c0d" } },
-        { product: { name: "02 // BOXY JERSEY TEE", price: 90, sku: "CB-TE-01" }, selectedSize: "L", selectedColor: { name: "Alabaster White", hex: "#FFFFFF" } }
+        { product: { name: "01 // OVERSIZED HOODIE", price: 210, sku: "CB-HD-01" }, selectedSize: "XL", selectedColor: { name: "Obsidian Black", hex: "#0c0c0d" }, quantity: 1 },
+        { product: { name: "02 // BOXY JERSEY TEE", price: 90, sku: "CB-TE-01" }, selectedSize: "L", selectedColor: { name: "Alabaster White", hex: "#FFFFFF" }, quantity: 2 }
       ],
       shippingAddress: {
         fullName: "Sadiq Chibundu",
@@ -198,18 +198,36 @@ export default function AdminWorkspaceModal({
       localStorage.setItem("cactus_bear_autom_whatsapp_apikey", whatsappApiKey.trim());
       localStorage.setItem("cactus_bear_autom_whatsapp_webhook", whatsappWebhook.trim());
 
+      const detailedItemsList = testOrder.items.map((it, i) => {
+        const pName = it.product.name;
+        const sku = it.product.sku || "N/A";
+        const size = it.selectedSize;
+        const color = it.selectedColor.name;
+        const qty = it.quantity || 1;
+        const price = it.product.price;
+        const total = price * qty;
+        return `[Item ${i + 1}] ${pName}\n` +
+               `   • SKU/ID: ${sku}\n` +
+               `   • Size: ${size}\n` +
+               `   • Color: ${color}\n` +
+               `   • Quantity: ${qty}\n` +
+               `   • Unit Price: $${price} USD\n` +
+               `   • Total for Item: $${total} USD`;
+      }).join("\n\n");
+
       const formattedMessage = 
-        `✦ ATELIER PRE-ORDER MANUALLY INITIATED: ${testOrder.id} ✦\n\n` +
-        `• Customer Pin: ${testOrder.email}\n` +
-        `• Full Name: ${testOrder.shippingAddress.fullName}\n` +
-        `• Mobile: ${testOrder.shippingAddress.phone}\n` +
-        `• Shipping Dest: ${testOrder.shippingAddress.addressLine}, ${testOrder.shippingAddress.city} \n` +
-        `• Transacted Value: ₦${(testOrder.totalPrice * 1500).toLocaleString()} ($${testOrder.totalPrice} USD)\n\n` +
-        `• Core Items:\n` +
-        testOrder.items.map((it, i) => 
-          `  [${i + 1}] ${it.product.name} - Size: ${it.selectedSize} (${it.selectedColor.name})`
-        ).join("\n") +
-        `\n\n✦ CRYPTOGRAPHIC ATELIER LEDGER ✦`;
+        `✦ MANUAL TEST CACTUS BEAR ORDER: ${testOrder.id} ✦\n\n` +
+        `• Customer Email: ${testOrder.email}\n` +
+        `• Customer Name: ${testOrder.shippingAddress.fullName}\n` +
+        `• Contact Phone: ${testOrder.shippingAddress.phone}\n\n` +
+        `• Shipping Address:\n` +
+        `  ${testOrder.shippingAddress.addressLine}\n` +
+        `  City: ${testOrder.shippingAddress.city}\n` +
+        `  Country: Nigeria\n\n` +
+        `• Total Value NGN (₦1,500/$1 Conversion): ₦${(testOrder.totalPrice * 1500).toLocaleString()}\n` +
+        `• Total Value USD: $${testOrder.totalPrice} USD\n\n` +
+        `• Items Breakdown:\n\n${detailedItemsList}\n\n` +
+        `✦ END OF TEST DISPATCH ✦`;
 
       const currentLogs = JSON.parse(localStorage.getItem("cactus_bear_autom_logs") || "[]");
       const localTestLog = {
@@ -233,15 +251,22 @@ export default function AdminWorkspaceModal({
           method: "POST",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify({
-            _subject: `✦ MANUAL TEST: CACTUS BEAR PRE-ORDER: ${testOrder.id} ✦`,
+            _subject: `✦ MANUAL TEST: CACTUS BEAR ORDER [ID: ${testOrder.id}] - ${testOrder.shippingAddress.fullName} ✦`,
             recipient: emailTarget,
             message: formattedMessage,
+            name: testOrder.shippingAddress.fullName,
+            email: testOrder.email,
+            phone: testOrder.shippingAddress.phone,
+            shippingAddress: testOrder.shippingAddress.addressLine,
+            city: testOrder.shippingAddress.city,
+            country: "Nigeria",
             orderId: testOrder.id,
-            buyer: testOrder.shippingAddress.fullName,
-            buyerPhone: testOrder.shippingAddress.phone,
             totalNgn: `₦${(testOrder.totalPrice * 1500).toLocaleString()}`,
             totalUsd: `$${testOrder.totalPrice}`,
-            itemsOrdered: testOrder.items.map((it) => `${it.product.name} (${it.selectedSize})`).join(", ")
+            itemsOrdered: testOrder.items.map((it) => `${it.product.name} (Size: ${it.selectedSize || "N/A"}, Color: ${it.selectedColor?.name || "N/A"}, Qty: ${it.quantity || 1})`).join("; "),
+            itemsOrderedDetailed: detailedItemsList,
+            creationDate: new Date().toISOString(),
+            isManualTest: true
           })
         }).catch(() => {});
         promises.push(emProm);
