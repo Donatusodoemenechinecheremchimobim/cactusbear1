@@ -155,13 +155,21 @@ export async function uploadProductImage(file: File): Promise<string> {
       const uniqueName = `products/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
       const fileRef = ref(storage, uniqueName);
       
-      const uploadResult = await uploadBytes(fileRef, blob, {
-        contentType: "image/jpeg"
-      });
-      const downloadUrl = await getDownloadURL(uploadResult.ref);
+      const uploadPromise = (async () => {
+        const uploadResult = await uploadBytes(fileRef, blob, {
+          contentType: "image/jpeg"
+        });
+        return await getDownloadURL(uploadResult.ref);
+      })();
+
+      const timeoutPromise = new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new Error("Firebase Storage operation timed out")), 2500)
+      );
+
+      const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
       return downloadUrl;
     } catch (err) {
-      console.warn("Storage upload failed, fallback to local base64:", err);
+      console.warn("Storage upload failed or timed out, fallback to local base64:", err);
       return dataUrl;
     }
   }

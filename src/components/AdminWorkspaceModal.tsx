@@ -39,6 +39,7 @@ export default function AdminWorkspaceModal({
   const [isTriggeringTest, setIsTriggeringTest] = useState<boolean>(false);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [imageUploadError, setImageUploadError] = useState<string>("");
+  const [productPublishError, setProductPublishError] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -475,6 +476,7 @@ export default function AdminWorkspaceModal({
     if (!pName || !pSku) return;
 
     setIsPublishing(true);
+    setProductPublishError("");
     try {
       const newProduct: Product = {
         id: "prod-" + pSku.toLowerCase().trim() + "-" + Math.floor(Math.random() * 1000),
@@ -507,8 +509,14 @@ export default function AdminWorkspaceModal({
         { name: "Alabaster White", hex: "#FFFFFF", bgHex: "#FFFFFF" }
       ]);
       setPSizes(["S", "M", "L", "XL"]);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      let msg = err?.message || String(err);
+      if (msg.includes("permission-denied") || msg.includes("insufficient permissions")) {
+        setProductPublishError("Permission Denied: To publish a product, please log in with your admin account (chibundusadiq@gmail.com). Guest sessions are not authorized to edit products.");
+      } else {
+        setProductPublishError("Fail to publish: " + msg);
+      }
     } finally {
       setIsPublishing(false);
     }
@@ -941,6 +949,13 @@ export default function AdminWorkspaceModal({
                         ))}
                       </div>
                     </div>
+
+                    {productPublishError && (
+                      <div className="border border-red-950/40 bg-red-950/10 p-3.5 font-mono text-[10px] leading-relaxed text-red-400 mt-1 border-l-2 border-l-red-500">
+                        <span className="font-bold block uppercase mb-1 tracking-wider">⚠ PUBLISH FAILED</span>
+                        {productPublishError}
+                      </div>
+                    )}
 
                     <button
                       type="submit"
