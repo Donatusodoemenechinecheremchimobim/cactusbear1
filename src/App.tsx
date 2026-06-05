@@ -31,7 +31,6 @@ import CartDrawer from "./components/CartDrawer";
 import Lookbook from "./components/Lookbook";
 import ProductDetailPage from "./components/ProductDetailPage";
 import CollectionPage from "./components/CollectionPage";
-import ErrorBoundary from "./components/ErrorBoundary";
 
 import { dbService, authService, UserSession, DropTimerConfig } from "./services/firebase";
 import GoogleAuthModal from "./components/GoogleAuthModal";
@@ -50,18 +49,6 @@ export default function App() {
   
   const [activePage, setActivePage] = useState<"home" | "collection" | "story" | "drop">("home");
   const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "info" | "alert"; timestamp: string }[]>([]);
-
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const safeScrollToTop = () => {
-    if (typeof window !== "undefined" && isMounted) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
   const addToast = (message: string, type: "success" | "info" | "alert" = "success") => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -326,11 +313,9 @@ export default function App() {
     setSelectedProductId(null);
     setActivePage("home");
     setTimeout(() => {
-      if (typeof window !== "undefined" && typeof document !== "undefined" && isMounted) {
-        const el = document.getElementById(sectionId);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth" });
-        }
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
       }
     }, 120);
   };
@@ -355,15 +340,13 @@ export default function App() {
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
   // Google Rich Snippets / Structured Data validation for Brand, Organization & Search Bar
-  const locationOrigin = (typeof window !== "undefined" && isMounted) ? window.location.origin : "https://cactus-bear.example.com";
-
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "ClothingStore",
     "name": "Cactus Bear Design Labs",
     "image": "https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/cb-og-image.jpg",
-    "@id": `${locationOrigin}/#store`,
-    "url": locationOrigin,
+    "@id": `${window.location.origin}/#store`,
+    "url": window.location.origin,
     "telephone": "+2348123456789",
     "priceRange": "₦₦₦",
     "address": {
@@ -402,12 +385,12 @@ export default function App() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Cactus Bear",
-    "url": locationOrigin,
+    "url": window.location.origin,
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `${locationOrigin}/?search={search_term_string}`
+        "urlTemplate": `${window.location.origin}/?search={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     }
@@ -417,18 +400,14 @@ export default function App() {
     <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between pt-16 pb-20 md:pt-0 md:pb-0">
       
       {/* Search Engine Optimization structured schemas */}
-      {isMounted && (
-        <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-          />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-          />
-        </>
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
 
       {/* GLOBAL BACKGROUND NOISE & SCANS GRID */}
       <div className="fixed inset-0 bg-[#020202] pointer-events-none z-0 overflow-hidden">
@@ -463,7 +442,7 @@ export default function App() {
             onClick={() => {
               setSelectedProductId(null);
               setActivePage("home");
-              safeScrollToTop();
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
               activePage === "home" ? "text-zinc-100 font-bold" : ""
@@ -475,7 +454,7 @@ export default function App() {
             onClick={() => {
               setSelectedProductId(null);
               setActivePage("collection");
-              safeScrollToTop();
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
               activePage === "collection" ? "text-[#EFFF00] font-bold" : ""
@@ -494,7 +473,7 @@ export default function App() {
             onClick={() => {
               setSelectedProductId(null);
               setActivePage("story");
-              safeScrollToTop();
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
               activePage === "story" ? "text-[#EFFF00] font-bold" : ""
@@ -506,7 +485,7 @@ export default function App() {
             onClick={() => {
               setSelectedProductId(null);
               setActivePage("drop");
-              safeScrollToTop();
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className={`hover:text-[#EFFF00] transition-colors uppercase cursor-pointer ${
               activePage === "drop" ? "text-[#EFFF00] font-bold" : ""
@@ -686,7 +665,7 @@ export default function App() {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
                   setActivePage("home");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={`hover:text-[#EFFF00] text-left transition-all block ${activePage === "home" ? "text-[#EFFF00]" : ""}`}
               >
@@ -697,7 +676,7 @@ export default function App() {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
                   setActivePage("collection");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={`hover:text-[#EFFF00] text-left transition-all block ${activePage === "collection" ? "text-[#EFFF00]" : ""}`}
               >
@@ -717,7 +696,7 @@ export default function App() {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
                   setActivePage("story");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={`hover:text-[#EFFF00] text-left transition-all block cursor-pointer ${
                   activePage === "story" ? "text-[#EFFF00]" : ""
@@ -730,7 +709,7 @@ export default function App() {
                   setMobileMenuOpen(false);
                   setSelectedProductId(null);
                   setActivePage("drop");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={`hover:text-[#EFFF00] text-left transition-all block cursor-pointer ${
                   activePage === "drop" ? "text-[#EFFF00]" : ""
@@ -830,8 +809,7 @@ export default function App() {
 
       {/* SECTION 01: HERO LANDING ENVIRONMENT (WORLD-CLASS STREETWEAR PRESENTATION) */}
       <main className="relative z-10 flex-1 flex flex-col">
-        <ErrorBoundary>
-          {selectedProductId && productsList.some(p => p.id === selectedProductId) ? (
+        {selectedProductId && productsList.some(p => p.id === selectedProductId) ? (
           <ProductDetailPage
             product={productsList.find(p => p.id === selectedProductId)!}
             allProducts={productsList}
@@ -873,7 +851,7 @@ export default function App() {
               <button
                 onClick={() => {
                   setActivePage("home");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="font-mono text-[10px] tracking-widest bg-zinc-950 border border-zinc-900 hover:border-[#EFFF00] px-5 py-3 uppercase hover:text-[#EFFF00] transition-colors cursor-pointer w-max"
               >
@@ -891,7 +869,7 @@ export default function App() {
                 onClick={() => {
                   setSelectedProductId(null);
                   setActivePage("collection");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="bg-[#EFFF00] hover:bg-white text-black font-mono font-black py-4 px-8 text-xs tracking-widest transition-colors rounded-none uppercase flex items-center gap-2 cursor-pointer"
               >
@@ -917,7 +895,7 @@ export default function App() {
               <button
                 onClick={() => {
                   setActivePage("home");
-                  safeScrollToTop();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="font-mono text-[10px] tracking-widest bg-zinc-950 border border-zinc-900 hover:border-[#EFFF00] px-5 py-3 uppercase hover:text-[#EFFF00] transition-colors cursor-pointer w-max"
               >
@@ -1191,7 +1169,7 @@ export default function App() {
 
               {/* Dynamic Categories Tab filters with horizontal swipe for mobile */}
               <div className="w-full overflow-x-auto scrollbar-none pb-2 md:pb-0">
-                <div className="flex gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none w-max">
+                <div className="flex gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none w-max max-w-full">
                   {(["All", "Outerwear", "Tees", "Headwear"] as const).map((cat) => {
                     const isChose = selectedCategory === cat;
                     return (
@@ -1437,7 +1415,6 @@ export default function App() {
         </section>
           </>
         )}
-        </ErrorBoundary>
       </main>
 
       {/* FOOTER: DESIGN STUDIO FOOTER */}
@@ -1572,7 +1549,7 @@ export default function App() {
                 setSelectedProductId(null);
                 setActivePage("home");
                 setMobileMenuOpen(false);
-                safeScrollToTop();
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
                 activePage === "home" && !selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"
@@ -1588,7 +1565,7 @@ export default function App() {
                 setSelectedProductId(null);
                 setActivePage("collection");
                 setMobileMenuOpen(false);
-                safeScrollToTop();
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className={`flex flex-col items-center gap-1 flex-1 cursor-pointer transition-colors outline-none ${
                 activePage === "collection" || selectedProductId ? "text-[#EFFF00]" : "text-zinc-550 hover:text-white"

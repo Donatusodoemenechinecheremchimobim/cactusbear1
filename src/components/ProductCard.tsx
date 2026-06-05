@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ShoppingBag, Eye, Plus, Check, Heart } from "lucide-react";
 import { Product, CartItem, ApparelColor } from "../types";
@@ -14,30 +14,22 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart, onSelect, isWishlisted, onToggleWishlist }: ProductCardProps) {
-  const [selectedSize, setSelectedSize] = useState<string>((product?.sizes && product.sizes[0]) || "L");
-  const [selectedColor, setSelectedColor] = useState<ApparelColor>((product?.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
+  const [selectedSize, setSelectedSize] = useState<string>((product.sizes && product.sizes[0]) || "L");
+  const [selectedColor, setSelectedColor] = useState<ApparelColor>((product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [added, setAdded] = useState<boolean>(false);
   const [adding, setAdding] = useState<boolean>(false);
   const [detailedPanel, setDetailedPanel] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (product) {
-      setSelectedSize((product.sizes && product.sizes[0]) || "L");
-      setSelectedColor((product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" });
-    }
-  }, [product]);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (adding || added) return;
     setAdding(true);
     
-    const safeColor = selectedColor || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" };
     const cartItem: CartItem = {
-      id: `std-${product.id}-${safeColor.name}-${selectedSize}`,
+      id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
       product,
-      selectedColor: safeColor,
+      selectedColor,
       selectedSize,
       quantity: 1,
     };
@@ -55,8 +47,8 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
     if (adding || added) return;
     setAdding(true);
     
-    const defaultSize = (product.sizes && product.sizes[0]) || "L";
-    const defaultColor = (product.colors && product.colors[0]) || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" };
+    const defaultSize = product.sizes[0] || "L";
+    const defaultColor = product.colors[0];
     
     const cartItem: CartItem = {
       id: `std-${product.id}-${defaultColor.name}-${defaultSize}`,
@@ -100,7 +92,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
       {/* Main product showcase box with responsive heights */}
       <div 
         onClick={handleShowDetails}
-        className="relative aspect-[4/5] sm:h-[280px] sm:aspect-auto w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
+        className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
       >
         {/* Floating Low Stock Badge */}
         {product.stock !== undefined && product.stock <= 5 && (
@@ -129,7 +121,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         {/* Real-time ambient background glow matching selected product color */}
         <div 
           className="absolute inset-0 filter blur-3xl opacity-20 group-hover:opacity-45 transition-all duration-500 rounded-full w-24 h-24 sm:w-36 sm:h-36 m-auto pointer-events-none"
-          style={{ backgroundColor: selectedColor?.hex || "#FFFFFF" }}
+          style={{ backgroundColor: selectedColor.hex }}
         />
 
         {/* Subtle decorative target grid on hover */}
@@ -146,16 +138,16 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
 
         {/* Dynamic Vector schematic of the item with responsive sizes or full-bleed magnified product image */}
         <div className={`transition-transform duration-500 group-hover:scale-105 flex items-center justify-center ${
-          (selectedColor?.imageUrl || product.imageUrl) 
+          (selectedColor.imageUrl || product.imageUrl) 
             ? "absolute inset-0 w-full h-full" 
-            : "relative w-24 h-24 xs:w-32 xs:h-32 sm:w-44 sm:h-44"
+            : "relative w-32 h-32 sm:w-44 sm:h-44"
         }`}>
-          {(selectedColor?.imageUrl || product.imageUrl) ? (
+          {(selectedColor.imageUrl || product.imageUrl) ? (
             <img
-              src={selectedColor?.imageUrl || product.imageUrl}
+              src={selectedColor.imageUrl || product.imageUrl}
               alt={product.name}
               referrerPolicy="no-referrer"
-              className="w-full h-full object-contain p-2"
+              className="w-full h-full object-cover"
             />
           ) : (
             <>
@@ -184,7 +176,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* Polo Core Body */}
                   <path
                     d="M 32,90 L 32,30 L 36,19 C 36,19 40,14 50,14 C 60,14 64,19 64,19 L 68,30 L 68,90 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     className="transition-colors duration-300"
                   />
                   
@@ -204,7 +196,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* Boxy Short-sleeve core shirt outline */}
                   <path
                     d="M 30,90 L 30,26 L 10,31 L 3,45 L 0,41 L 8,22 L 26,16 C 30,16 35,18 35,18 C 35,18 40,12 50,12 C 60,12 65,18 65,18 C 65,18 70,16 74,16 L 92,22 L 100,41 L 97,45 L 90,31 L 70,26 L 70,90 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     className="transition-colors duration-300"
                   />
                   
@@ -233,7 +225,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* High-box crop body & short sleeves */}
                   <path
                     d="M 28,66 L 28,26 L 6,31 L 0,44 L 4,46 L 9,33 L 26,20 C 26,20 30,21 35,21 C 35,21 40,15 50,15 C 60,15 65,21 65,21 C 65,21 70,20 74,20 L 91,33 L 96,44 L 100,41 L 94,31 L 72,26 L 72,66 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     className="transition-colors duration-300"
                   />
                   {/* Thick retro crewneck collar band */}
@@ -250,7 +242,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* Massive Crewneck Fleece body */}
                   <path
                     d="M 28,86 L 24,34 L 12,38 L 4,48 L 1,60 L 8,64 L 14,54 L 23,40 L 24,33 C 24,33 28,34 32,34 C 32,34 37,21 50,21 C 63,21 68,34 68,34 C 68,34 72,33 76,33 L 77,40 L 86,54 L 92,64 L 99,60 L 96,48 L 88,38 L 76,34 L 72,86 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     className="transition-colors duration-300"
                   />
                   
@@ -300,7 +292,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* Foam crown front panel */}
                   <path
                     d="M 33,65 C 33,35 40,27 50,27 C 60,27 67,35 67,65 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     className="transition-colors duration-300"
                     stroke="rgba(0,0,0,0.2)"
                     strokeWidth="0.5"
@@ -309,7 +301,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                   {/* Visor curved bill with triple raw stitching */}
                   <path
                     d="M 18,63 C 28,63 72,63 82,71 C 77,77 40,78 18,63 Z"
-                    fill={selectedColor?.hex || "#FFFFFF"}
+                    fill={selectedColor.hex}
                     opacity="0.95"
                     stroke="rgba(0,0,0,0.4)"
                     strokeWidth="1.5"
@@ -329,7 +321,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
                       <path
                         d="M 30,90 L 25,38 L 15,44 L 5,53 L 2,49 L 10,40 L 24,19 L 36,20 L 36,10 L 50,7 L 64,10 L 64,20 L 76,19 L 90,40 L 98,49 L 95,53 L 85,44 L 75,38 L 70,90 Z"
-                        fill={selectedColor?.hex || "#FFFFFF"}
+                        fill={selectedColor.hex}
                         className="transition-colors duration-300"
                       />
                       <path d="M 36,20 C 38,27 62,27 64,20" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
@@ -341,7 +333,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
                       <path
                         d="M 28,90 L 25,28 L 12,32 L 4,43 L 1,58 L 8,62 L 15,53 L 25,43 L 25,28 L 36,20 C 36,20 40,12 50,12 C 60,12 64,20 64,20 L 75,28 L 75,43 L 85,53 L 92,62 L 99,58 L 96,43 L 88,32 L 75,28 L 72,90 Z"
-                        fill={selectedColor?.hex || "#FFFFFF"}
+                        fill={selectedColor.hex}
                         className="transition-colors duration-300"
                       />
                       <line x1="26" y1="42" x2="74" y2="42" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
@@ -355,7 +347,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
                       <path
                         d="M 32,90 L 32,30 L 12,34 L 5,47 L 1,44 L 8,26 L 27,18 L 36,19 C 36,19 40,14 50,14 C 60,14 64,19 64,19 L 73,18 L 92,26 L 99,44 L 95,47 L 88,34 L 88,30 L 68,90 Z"
-                        fill={selectedColor?.hex || "#FFFFFF"}
+                        fill={selectedColor.hex}
                         className="transition-colors duration-300"
                       />
                       <path d="M 36,19 C 36,24 64,24 64,19" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
@@ -366,12 +358,12 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]">
                       <path
                         d="M 25,65 C 25,35 38,25 50,25 C 62,25 75,35 75,65 Z"
-                        fill={selectedColor?.hex || "#FFFFFF"}
+                        fill={selectedColor.hex}
                         className="transition-colors duration-300"
                       />
                       <path
                         d="M 22,62 C 32,62 68,62 82,71 C 77,76 38,76 22,62 Z"
-                        fill={selectedColor?.hex || "#FFFFFF"}
+                        fill={selectedColor.hex}
                         opacity="0.9"
                         stroke="rgba(0,0,0,0.2)"
                         strokeWidth="1"
@@ -385,7 +377,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           )}
 
           {/* Micro embroidery branding icon over vector garment / product picture (Precisely positioned per garment ID) */}
-          {!(selectedColor?.imageUrl || product.imageUrl) && (
+          {!(selectedColor.imageUrl || product.imageUrl) && (
             <div
               className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 group-hover:scale-110 ${
                 isHovered ? "opacity-100" : "opacity-80"
@@ -408,15 +400,15 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
             >
               <GlowCrown
                 size={"100%"}
-                color={selectedColor?.name === "Bleach White" ? "#000000" : "#EFFF00"}
+                color={selectedColor.name === "Bleach White" ? "#000000" : "#EFFF00"}
                 glow={isHovered}
               />
             </div>
           )}
         </div>
 
-        {/* Hover quick details slide (strictly visible on desktop viewport to prevent touch blockages on mobile screens) */}
-        <div className="hidden md:flex absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 gap-2 items-center">
+        {/* Hover quick details slide */}
+        <div className="absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex gap-2 items-center">
           <button
             onClick={handleQuickBuyDefault}
             disabled={adding || added}
@@ -445,19 +437,19 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
 
       {/* Info Blocks and purchase commands */}
       <div className="p-4 border-t border-zinc-900 bg-black/60">
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:justify-between sm:items-start sm:gap-2">
+        <div className="flex justify-between items-start gap-1">
           <h3 
             onClick={handleShowDetails}
-            className="font-sans font-extrabold text-xs sm:text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer line-clamp-2 min-h-[2.25rem] leading-tight"
+            className="font-sans font-extrabold text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer"
           >
             {product.name}
           </h3>
-          <span className="font-mono text-[10px] sm:text-xs font-black bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5 shrink-0 self-start sm:self-auto text-[#EFFF00] text-right">
-            ₦{(Number(product.price) || 0).toLocaleString()}
+          <span className="font-mono text-xs font-black text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5">
+            ₦{product.price.toLocaleString()}
           </span>
         </div>
 
-        <p className="text-zinc-550 text-[10px] sm:text-[11px] font-sans mt-1.5 line-clamp-2 min-h-[2rem] leading-tight">
+        <p className="text-zinc-500 text-[11px] font-sans mt-1.5 line-clamp-2 h-8 leading-tight">
           {product.description}
         </p>
 
@@ -468,8 +460,8 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           <div className="flex gap-2 items-center">
             <span className="text-[9px] font-mono text-zinc-500 uppercase">COLOR</span>
             <div className="flex gap-1.5">
-              {(product.colors || []).map((color) => {
-                const isCSelected = selectedColor?.name === color.name;
+              {product.colors.map((color) => {
+                const isCSelected = selectedColor.name === color.name;
                 return (
                   <button
                     key={color.name}
@@ -490,7 +482,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
             <div className="flex gap-1.5 items-center">
               <span className="text-[9px] font-mono text-zinc-500 uppercase">SIZE</span>
               <div className="flex gap-1 flex-wrap">
-                {(product.sizes || []).map((sz) => {
+                {product.sizes.map((sz) => {
                   const isSSelected = selectedSize === sz;
                   return (
                     <button
@@ -605,11 +597,10 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
                 e.stopPropagation();
                 if (adding || added) return;
                 setAdding(true);
-                const safeColor = selectedColor || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" };
                 const cartItem: CartItem = {
-                  id: `std-${product.id}-${safeColor.name}-${selectedSize}`,
+                  id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
                   product,
-                  selectedColor: safeColor,
+                  selectedColor,
                   selectedSize,
                   quantity: 1,
                 };
@@ -652,7 +643,7 @@ export function ProductCardSkeleton() {
       </div>
 
       {/* Main product showcase box */}
-      <div className="relative aspect-[4/5] sm:h-[280px] sm:aspect-auto w-full flex items-center justify-center bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden">
+      <div className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden">
         {/* Wishlist item placeholder */}
         <div className="absolute top-3 right-3 w-8 h-8 bg-black/65 border border-zinc-900" />
         

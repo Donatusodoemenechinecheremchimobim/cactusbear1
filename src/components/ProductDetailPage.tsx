@@ -109,11 +109,10 @@ export default function ProductDetailPage({
     if (adding || added) return;
     setAdding(true);
 
-    const safeColor = selectedColor || { name: "Bleach White", hex: "#FFFFFF", bgHex: "#1a1a1c" };
     const cartItem: CartItem = {
-      id: `std-${product.id}-${safeColor.name}-${selectedSize}`,
+      id: `std-${product.id}-${selectedColor.name}-${selectedSize}`,
       product,
-      selectedColor: safeColor,
+      selectedColor,
       selectedSize,
       quantity: 1,
     };
@@ -408,7 +407,7 @@ export default function ProductDetailPage({
               </div>
 
               <div className="flex gap-2.5">
-                {(product.colors || []).map((color) => {
+                {product.colors.map((color) => {
                   const isCSelected = selectedColor.name === color.name;
                   return (
                     <button
@@ -442,7 +441,7 @@ export default function ProductDetailPage({
               </div>
 
               <div className="grid grid-cols-5 gap-2">
-                {(product.sizes || []).map((sz) => {
+                {product.sizes.map((sz) => {
                   const isSSelected = selectedSize === sz;
                   return (
                     <button
@@ -712,7 +711,7 @@ export default function ProductDetailPage({
               <div className="w-full h-36 bg-zinc-950/40 flex items-center justify-center relative overflow-hidden mb-4">
                 <div 
                   className="absolute inset-0 filter blur-2xl opacity-10 transition-opacity group-hover:opacity-20 rounded-full w-12 h-12 m-auto pointer-events-none"
-                  style={{ backgroundColor: (p.colors && p.colors[0]?.hex) || "#EFFF00" }}
+                  style={{ backgroundColor: p.colors[0].hex }}
                 />
                 <div className={`transition-transform group-hover:scale-105 ${
                   (p.colors?.[0]?.imageUrl || p.imageUrl)
@@ -727,7 +726,7 @@ export default function ProductDetailPage({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <RenderGarmentSVG id={p.id} colorHex={(p.colors && p.colors[0]?.hex) || "#fff"} mockupType={p.mockupType} />
+                    <RenderGarmentSVG id={p.id} colorHex={p.colors[0]?.hex || "#fff"} mockupType={p.mockupType} />
                   )}
                 </div>
               </div>

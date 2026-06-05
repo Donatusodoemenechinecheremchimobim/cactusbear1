@@ -97,7 +97,7 @@ export default function CollectionPage({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="w-full bg-[#030303] text-white py-12 px-4 md:px-8 relative overflow-x-hidden"
+      className="w-full bg-[#030303] text-white py-12 px-4 md:px-8 relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto z-10 relative">
         {/* Breadcrumb back button */}
