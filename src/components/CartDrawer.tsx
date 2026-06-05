@@ -65,6 +65,11 @@ export default function CartDrawer({
   }, [selectedState, selectedArea, customArea, streetDetail]);
   const [orderHash, setOrderHash] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setCheckoutError(null);
+  }, [paymentMethod, checkoutStep, isOpen]);
 
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("2348123456789");
   const [adminEmail, setAdminEmail] = useState<string>("chibundusadiq@gmail.com");
@@ -108,12 +113,14 @@ export default function CartDrawer({
   const triggerSecureCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setCheckoutError(null);
     
     try {
       if (paymentMethod === "paystack") {
         const loaded = await loadPaystackScript();
         if (!loaded) {
           onAddToast?.("FAILED TO CONNECT TO PAYSTACK ENTRANCE. NETWORK FAULT.", "alert");
+          setCheckoutError("FAILED TO LOAD PAYSTACK INTEGRATION LAYER. PLUGINS OR NETWORK FIREWALL MAY BE BLOCKING DEPLOYED Gateways. PLEASE TRY BANK TRANSFER OR CONNECT TO A DIFFERENT NETWORK ACCESS.");
           setSubmitting(false);
           return;
         }
@@ -164,12 +171,14 @@ export default function CartDrawer({
             } catch (err: any) {
               console.error("Order callback failed:", err);
               onAddToast?.(`DATABASE REFERENCE WRITE ERROR: ${err?.message}`, "alert");
+              setCheckoutError(`DATABASE VERIFICATION REJECTED: ${err?.message || "CHECKOUT LOGGING ERROR"}`);
             } finally {
               setSubmitting(false);
             }
           },
           onClose: () => {
             onAddToast?.("TRANSACTION DISMISSED BY CLIENT // SECURED VAULT SECURED", "info");
+            setCheckoutError("CHECKOUT SUSPENDED: Secure payment window was closed by the client premium layer before the authentication transaction could finalize. If you authorized cash or cards but were disconnected, notify us with the receipt below.");
             setSubmitting(false);
           }
         });
@@ -213,6 +222,7 @@ export default function CartDrawer({
     } catch (err: any) {
       console.error("Order creation failed:", err);
       onAddToast?.(`ORDER REJECTED: ${err?.message || "SYSTEM BUSY"}`, "alert");
+      setCheckoutError(`ORDER SUBMISSION FAILED: ${err?.message || "A network handshake error occurred. Check browser connection status."}`);
       setSubmitting(false);
     }
   };
@@ -716,6 +726,32 @@ export default function CartDrawer({
                           </div>
                         )}
                       </div>
+
+                      {checkoutError && (
+                        <div className="bg-[#1a0a0d] border border-red-500/30 p-4 text-left flex flex-col gap-2 transition-all">
+                          <div className="flex gap-2 items-center text-red-500">
+                            <span className="font-mono text-[9px] uppercase tracking-widest font-black bg-red-950 px-2 py-0.5 border border-red-500/20">
+                              ⚠️ SECURE VAULT EXCEPTION
+                            </span>
+                          </div>
+                          <p className="text-zinc-300 text-[10.5px] leading-relaxed font-sans">
+                            {checkoutError}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => setCheckoutError(null)}
+                              className="font-mono text-[9.5px] text-[#EFFF00] font-bold hover:underline uppercase cursor-pointer"
+                            >
+                              [ DISMISS WARNING ]
+                            </button>
+                            <span className="text-zinc-800 text-[9px] font-mono">|</span>
+                            <span className="text-zinc-500 text-[9px] font-sans">
+                              Try another connection or select <strong>BANK TRANSFER</strong> to finalize order.
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       <button
                         type="submit"

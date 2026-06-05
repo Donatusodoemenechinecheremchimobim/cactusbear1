@@ -339,9 +339,76 @@ export default function App() {
 
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
+  // Google Rich Snippets / Structured Data validation for Brand, Organization & Search Bar
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ClothingStore",
+    "name": "Cactus Bear Design Labs",
+    "image": "https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/cb-og-image.jpg",
+    "@id": `${window.location.origin}/#store`,
+    "url": window.location.origin,
+    "telephone": "+2348123456789",
+    "priceRange": "₦₦₦",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Agungi Area, Lekki-Epe Expressway",
+      "addressLocality": "Lagos",
+      "addressRegion": "Lagos State",
+      "postalCode": "105102",
+      "addressCountry": "NG"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 6.4311,
+      "longitude": 3.4758
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "opens": "09:00",
+      "closes": "18:00"
+    },
+    "sameAs": [
+      "https://instagram.com/cactusbear",
+      "https://wa.me/2348123456789"
+    ]
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Cactus Bear",
+    "url": window.location.origin,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${window.location.origin}/?search={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="w-full bg-black text-white font-sans selection:bg-[#EFFF00] selection:text-black min-h-screen flex flex-col justify-between pt-16 pb-20 md:pt-0 md:pb-0">
       
+      {/* Search Engine Optimization structured schemas */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
       {/* GLOBAL BACKGROUND NOISE & SCANS GRID */}
       <div className="fixed inset-0 bg-[#020202] pointer-events-none z-0 overflow-hidden">
         {/* Dot pattern matrix */}
@@ -1102,7 +1169,7 @@ export default function App() {
 
               {/* Dynamic Categories Tab filters with horizontal swipe for mobile */}
               <div className="w-full overflow-x-auto scrollbar-none pb-2 md:pb-0">
-                <div className="flex gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none w-max max-w-full">
+                <div className="flex gap-2 p-1 bg-[#050505] border border-zinc-900 rounded-none w-max">
                   {(["All", "Outerwear", "Tees", "Headwear"] as const).map((cat) => {
                     const isChose = selectedCategory === cat;
                     return (

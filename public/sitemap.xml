@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- PRIMARY PORTAL ENTRYPOINT -->
+  <url>
+    <loc>https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- ARCHIVE & LIVE COLLECTIONS -->
+  <url>
+    <loc>https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/?page=collection</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- COLLECTIBLE DROP & TIMER MECHANICS -->
+  <url>
+    <loc>https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/?page=drop</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- THE CACTUS BEAR CHRONICLES / BRAND STORY / LABS -->
+  <url>
+    <loc>https://ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app/?page=story</loc>
+    <lastmod>2026-06-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

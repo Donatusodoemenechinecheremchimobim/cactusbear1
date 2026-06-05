@@ -92,7 +92,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
       {/* Main product showcase box with responsive heights */}
       <div 
         onClick={handleShowDetails}
-        className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
+        className="relative aspect-[4/5] sm:h-[280px] sm:aspect-auto w-full flex items-center justify-center cursor-pointer bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden"
       >
         {/* Floating Low Stock Badge */}
         {product.stock !== undefined && product.stock <= 5 && (
@@ -140,7 +140,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         <div className={`transition-transform duration-500 group-hover:scale-105 flex items-center justify-center ${
           (selectedColor.imageUrl || product.imageUrl) 
             ? "absolute inset-0 w-full h-full" 
-            : "relative w-32 h-32 sm:w-44 sm:h-44"
+            : "relative w-24 h-24 xs:w-32 xs:h-32 sm:w-44 sm:h-44"
         }`}>
           {(selectedColor.imageUrl || product.imageUrl) ? (
             <img
@@ -407,8 +407,8 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           )}
         </div>
 
-        {/* Hover quick details slide */}
-        <div className="absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 flex gap-2 items-center">
+        {/* Hover quick details slide (strictly visible on desktop viewport to prevent touch blockages on mobile screens) */}
+        <div className="hidden md:flex absolute inset-x-0 bottom-0 bg-black/90 backdrop-blur-md p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 border-t border-zinc-900 gap-2 items-center">
           <button
             onClick={handleQuickBuyDefault}
             disabled={adding || added}
@@ -437,14 +437,14 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
 
       {/* Info Blocks and purchase commands */}
       <div className="p-4 border-t border-zinc-900 bg-black/60">
-        <div className="flex justify-between items-start gap-1">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:justify-between sm:items-start sm:gap-2">
           <h3 
             onClick={handleShowDetails}
-            className="font-sans font-extrabold text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer"
+            className="font-sans font-extrabold text-xs sm:text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer line-clamp-1 sm:line-clamp-2 h-4 sm:h-10"
           >
             {product.name}
           </h3>
-          <span className="font-mono text-xs font-black text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5">
+          <span className="font-mono text-[10px] sm:text-xs font-black bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5 shrink-0 self-start sm:self-auto text-[#EFFF00] sm:text-white">
             ₦{product.price.toLocaleString()}
           </span>
         </div>
@@ -643,7 +643,7 @@ export function ProductCardSkeleton() {
       </div>
 
       {/* Main product showcase box */}
-      <div className="relative h-[200px] sm:h-[280px] w-full flex items-center justify-center bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden">
+      <div className="relative aspect-[4/5] sm:h-[280px] sm:aspect-auto w-full flex items-center justify-center bg-gradient-to-b from-black/20 to-zinc-950/40 p-4 sm:p-6 overflow-hidden">
         {/* Wishlist item placeholder */}
         <div className="absolute top-3 right-3 w-8 h-8 bg-black/65 border border-zinc-900" />
         

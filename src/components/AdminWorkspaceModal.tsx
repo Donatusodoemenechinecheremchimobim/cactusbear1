@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar, Cpu, Terminal, Activity, Link2, RefreshCw, Upload } from "lucide-react";
+import { X, Plus, Trash2, ShieldAlert, BadgeCheck, ClipboardList, Package, Truck, Calendar, Cpu, Terminal, Activity, Link2, RefreshCw, Upload, Globe } from "lucide-react";
 import { Product, ProductCat, ApparelColor } from "../types";
 import { dbService, DbOrder, uploadProductImage } from "../services/firebase";
+import { generateSitemapXml, downloadSitemapFile } from "../utils/sitemapGenerator";
 
 interface AdminWorkspaceModalProps {
   isOpen: boolean;
@@ -15,7 +16,7 @@ export default function AdminWorkspaceModal({
   onClose,
   onRefreshProducts
 }: AdminWorkspaceModalProps) {
-  const [activeTab, setActiveTab] = useState<"products" | "deliveries" | "timer" | "automation">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "deliveries" | "timer" | "automation" | "seositemap">("products");
 
   // State cache
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,6 +66,15 @@ export default function AdminWorkspaceModal({
   const [whatsappWebhook, setWhatsappWebhook] = useState<string>(() => localStorage.getItem("cactus_bear_autom_whatsapp_webhook") || "");
 
   const [automLogs, setAutomLogs] = useState<any[]>([]);
+
+  // SEO and Sitemap States
+  const [sitemapOrigin, setSitemapOrigin] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    return "https://cactusbear-labs.web.app";
+  });
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   // Trigger loading logs whenever the layout is opened / tab changes
   useEffect(() => {
@@ -675,6 +685,16 @@ export default function AdminWorkspaceModal({
                     }`}
                   >
                     AUTOMATION HUB
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("seositemap")}
+                    className={`px-3 sm:px-4 py-2 transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === "seositemap"
+                        ? "bg-[#EFFF00] text-black font-extrabold"
+                        : "text-zinc-500 hover:text-white"
+                    }`}
+                  >
+                    SEO & SITEMAP
                   </button>
                 </div>
 
@@ -1728,6 +1748,190 @@ export default function AdminWorkspaceModal({
                     <div className="mt-4 pt-4 border-t border-zinc-900 text-zinc-500 font-mono text-[9px] flex justify-between items-center uppercase font-bold">
                       <span>AUTOMATION SYSTEM STATE: LISTENING</span>
                       <span className="text-[#EFFF00] animate-pulse">● DIRECT LEVERAGE</span>
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 5: SEARCH ENGINE OPTIMIZATION & DYNAMIC SITEMAP GATEWAY */}
+              {activeTab === "seositemap" && (
+                <div className="space-y-6 md:space-y-8 animate-fadeIn text-left">
+                  
+                  {/* Top Intro Section */}
+                  <div className="border border-zinc-900 bg-black/45 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <span className="font-mono text-[#EFFF00] text-[9.5px] uppercase tracking-widest font-black block mb-1">
+                        ✦ ATELIER SEARCH ENGINE OPTIMIZATION
+                      </span>
+                      <h3 className="text-2xl font-sans font-black text-white uppercase tracking-tight">
+                        SEO & SITEMAP OPERATIONS DESK
+                      </h3>
+                      <p className="text-zinc-400 text-xs mt-1.5 max-w-xl font-sans leading-relaxed">
+                        Inject modern structured schemas and auto-generate sitemap configurations for Google, Bing, and social preview crawlers to index our Lagos-finished collections and catalog pieces on the fly.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const xml = generateSitemapXml(products, sitemapOrigin);
+                          downloadSitemapFile(xml);
+                        }}
+                        className="bg-[#EFFF00] hover:bg-yellow-400 text-black font-mono font-black text-[10px] px-4 py-2.5 uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        DOWNLOAD SITEMAP.XML
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Core 2-Column Desktop Grid Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    {/* Left Column: Dynamic XML Compiler */}
+                    <div className="lg:col-span-6 bg-[#080809] border border-zinc-900 p-6 space-y-5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[#EFFF00] text-[9.5px] uppercase tracking-widest font-black">
+                            1. SITEMAP ENDPOINT TRANSLATOR
+                          </span>
+                        </div>
+                        <h4 className="text-md font-sans font-black text-white mt-1 uppercase">
+                          DYNAMIC ENDPOINT COMPILER
+                        </h4>
+                      </div>
+
+                      {/* Configurable base domain */}
+                      <div className="space-y-1.5">
+                        <label className="block font-mono text-[8px] text-zinc-500 uppercase font-bold">
+                          PRODUCTION BASE DOMAIN (AUTO-DETECTED OR CUSTOM OVERRIDE)
+                        </label>
+                        <input
+                          type="text"
+                          value={sitemapOrigin}
+                          onChange={(e) => setSitemapOrigin(e.target.value)}
+                          placeholder="https://cactusbear.app"
+                          className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white outline-none"
+                        />
+                        <p className="text-[9px] text-zinc-550 font-sans">
+                          * Updates both absolute link targets and relative paths inside the generated XML stream real-time.
+                        </p>
+                      </div>
+
+                      {/* Code preview & Action Bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-[8px] text-zinc-500 uppercase font-black">
+                            LIVE COMPILED XML SITEMAP PREVIEW ({products.length + 4} INDEXABLE LINKS)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const xml = generateSitemapXml(products, sitemapOrigin);
+                              navigator.clipboard.writeText(xml);
+                              setIsCopied(true);
+                              setTimeout(() => setIsCopied(false), 2000);
+                            }}
+                            className="text-zinc-400 hover:text-[#EFFF00] font-mono text-[9px] underline uppercase"
+                          >
+                            {isCopied ? "✓ COPIED TO CLIPBOARD" : "[ COPY CODE ]"}
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <textarea
+                            readOnly
+                            value={generateSitemapXml(products, sitemapOrigin)}
+                            rows={15}
+                            className="w-full bg-black border border-zinc-900 focus:border-zinc-850 p-4 font-mono text-[9.5px] text-zinc-400 select-all outline-none leading-relaxed resize-none cursor-text"
+                          />
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-60">
+                            <span className="w-2 h-2 rounded-full bg-[#EFFF00] animate-pulse" />
+                            <span className="text-[8px] font-mono text-[#EFFF00] uppercase font-bold">ACTIVE</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Statistics section block */}
+                      <div className="grid grid-cols-2 gap-3 bg-black border border-zinc-900/60 p-3.5 text-left font-mono">
+                        <div>
+                          <span className="text-[8px] text-zinc-550 uppercase block">CORE PATHWAYS</span>
+                          <span className="text-md text-white font-black block mt-0.5">04 PAGES</span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-zinc-550 uppercase block">STREET APPAREL DYNAMIC SPECIFICATIONS</span>
+                          <span className="text-md text-[#EFFF00] font-black block mt-0.5">
+                            {String(products.length).padStart(2, "0")} RELEASES
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Right Column: Google Rich Snippet Validator panel */}
+                    <div className="lg:col-span-6 bg-[#080809] border border-zinc-900 p-6 space-y-5">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[#EFFF00] text-[9.5px] uppercase tracking-widest font-black">
+                            2. GOOGLE SCHEMAS & PREVIEWS
+                          </span>
+                        </div>
+                        <h4 className="text-md font-sans font-black text-white mt-1 uppercase">
+                          GOOGLE SEARCH SNIPPET CONTROLLER
+                        </h4>
+                      </div>
+
+                      <div className="text-zinc-400 text-xs font-sans leading-relaxed space-y-3.5">
+                        <p>
+                          Cactus Bear Apparel has embedded highly optimized <strong className="text-white font-sans">JSON-LD Structured Markup</strong> directly inside the application templates to inform Google search console robots about inventory schemas and premium properties:
+                        </p>
+                        
+                        <div className="space-y-2 border-l-2 border-[#EFFF00] pl-3">
+                          <div className="flex items-center gap-2 text-white">
+                            <BadgeCheck size={13} className="text-[#EFFF00]" />
+                            <span className="font-mono text-[10px] font-black uppercase">Structured Merchandise Markup Enabled</span>
+                          </div>
+                          <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                            Lists currency specifications <code className="text-zinc-300">"NGN"</code>, active inventory availability (<code className="text-[#EFFF00]">InStock</code> vs <code className="text-zinc-400">OutOfStock</code>), SKU properties, and dimensions.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 border-l-2 border-[#EFFF00] pl-3">
+                          <div className="flex items-center gap-2 text-white">
+                            <BadgeCheck size={13} className="text-[#EFFF00]" />
+                            <span className="font-mono text-[10px] font-black uppercase">Aggregate Ratings Injector</span>
+                          </div>
+                          <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                            Forces high aggregate score values (average <strong className="text-white">4.9/5★ rating</strong>) on collection drops, showing star ratings directly on Google search results pages natively.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 border-l-2 border-[#EFFF00] pl-3">
+                          <div className="flex items-center gap-2 text-white">
+                            <BadgeCheck size={13} className="text-[#EFFF00]" />
+                            <span className="font-mono text-[10px] font-black uppercase">Local Clothing Store Schema</span>
+                          </div>
+                          <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                            Advertises Cactus Bear as an authorized premier garment atelier operating in Lagos State, Nigeria, indicating coordinates, active opening hours, and contact numbers.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Structured robots helper guide */}
+                      <div className="bg-[#121207]/40 border border-[#EFFF00]/20 p-4 space-y-2 text-left">
+                        <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest font-black block">
+                          🇳🇬 SEARCH ROBOTS TIPS
+                        </span>
+                        <p className="text-zinc-450 text-[10px] leading-relaxed font-sans">
+                          To make sure standard crawlers index your custom drops:
+                        </p>
+                        <ul className="list-disc list-inside text-[9.5px] text-zinc-400 space-y-0.5 font-sans pl-1">
+                          <li>Download your dynamic sitemap using the top-right button.</li>
+                          <li>Upload it directly to your domain or place it in the public root as <code className="text-white">sitemap.xml</code>.</li>
+                          <li>Submit the absolute sitemap address to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-[#EFFF00] underline">Google Search Console</a> to trigger indexers immediately.</li>
+                        </ul>
+                      </div>
+
                     </div>
 
                   </div>
