@@ -1,12 +1,48 @@
-import { useState, useRef } from "react";
-import { motion } from "motion/react";
-import { Volume2, VolumeX, Flame, Zap, Compass, Cpu, Music } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Volume2, VolumeX, Flame, Zap, Compass, Cpu, Music, RefreshCw, Camera } from "lucide-react";
+import { ProductCardSkeleton } from "./ProductCard";
+
+const LOOKBOOK_SHOTS = [
+  {
+    id: "look-01",
+    tag: "CAMPAIGN // SERIE 01",
+    label: "OBSIDIAN SILHOUETTE",
+    desc: "Prestige organic fleece styled with double needle structural shoulder lines and thick rib retention.",
+    imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=600&auto=format&fit=crop",
+    dimensions: "500GSM BOX FIT"
+  },
+  {
+    id: "look-02",
+    tag: "CAMPAIGN // SERIE 02",
+    label: "TOBACCO EARTH BLUEPRINT",
+    desc: "Structured linen-cotton yarn woven and buttoned under rigorous atelier guidelines.",
+    imageUrl: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop",
+    dimensions: "OVERSIZED SEED SHIRT"
+  }
+];
 
 export default function Lookbook() {
   const [isPlayingHum, setIsPlayingHum] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState<boolean>(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+
+  // Auto load lookbook captures on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsFetching(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const triggerRefresh = () => {
+    setIsFetching(true);
+    setTimeout(() => {
+      setIsFetching(false);
+    }, 1500);
+  };
 
   // Modular audio synthesizer node using Web Audio API
   const handleSoundNode = (toneType: string) => {
@@ -178,6 +214,85 @@ export default function Lookbook() {
                 <div className="text-center bg-[#EFFF00]/10 text-[#EFFF00] py-1 border border-[#EFFF00]/20">
                   IN STOCK
                 </div>
+              </div>
+            </div>
+
+            {/* Bento Card 4: Editorial Campaign Captures with high-end skeleton loading */}
+            <div className="md:col-span-2 bg-[#020202] border border-zinc-900 p-6 md:p-8 flex flex-col gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-950 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-none border border-zinc-900 flex items-center justify-center text-[#EFFF00] bg-black/40">
+                    <Camera size={14} />
+                  </div>
+                  <div>
+                    <span className="font-mono text-[#EFFF00] text-[9px] tracking-widest block font-bold uppercase">
+                      05 // EDITORIAL LOOKBOOK CAMPAIGN
+                    </span>
+                    <h3 className="font-sans font-black text-xl md:text-2xl uppercase tracking-tight text-white mt-0.5">
+                      EDITORIAL <span className="text-[#EFFF00]">CAPTURES</span>
+                    </h3>
+                  </div>
+                </div>
+                
+                {/* Loader control indicator */}
+                <button
+                  onClick={triggerRefresh}
+                  disabled={isFetching}
+                  className="font-mono text-[8px] tracking-[0.25em] bg-zinc-950 border border-zinc-900 hover:border-[#EFFF00] text-zinc-400 hover:text-[#EFFF00] transition-all px-4 py-2 uppercase flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                >
+                  <RefreshCw size={11} className={`${isFetching ? 'animate-spin text-[#EFFF00]' : 'text-zinc-550'}`} />
+                  <span>REFRESH CAPTURES FEED</span>
+                </button>
+              </div>
+
+              {/* Lookbook captures grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[380px]">
+                {isFetching ? (
+                  <>
+                    <ProductCardSkeleton />
+                    <ProductCardSkeleton />
+                  </>
+                ) : (
+                  LOOKBOOK_SHOTS.map((shot) => (
+                    <motion.div
+                      key={shot.id}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-[#050505] border border-zinc-900 group/look overflow-hidden flex flex-col justify-between relative"
+                    >
+                      {/* Header block with brand tag and release metadata */}
+                      <div className="flex justify-between items-center px-4 py-2.5 bg-black/40 border-b border-zinc-900 font-mono text-[9px] text-zinc-550">
+                        <span>{shot.tag}</span>
+                        <span className="text-[#EFFF00] font-bold">{shot.dimensions}</span>
+                      </div>
+
+                      {/* Main campaign snapshot box */}
+                      <div className="relative h-[220px] sm:h-[300px] w-full overflow-hidden bg-zinc-950 flex items-center justify-center">
+                        <img
+                          src={shot.imageUrl}
+                          alt={shot.label}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover grayscale opacity-75 group-hover/look:scale-105 group-hover/look:grayscale-0 group-hover/look:opacity-100 transition-all duration-700 ease-out"
+                        />
+                        {/* Interactive watermark overlay */}
+                        <div className="absolute bottom-3 left-3 bg-black/90 border border-zinc-900 px-3 py-1 text-[8px] font-mono text-zinc-400 tracking-wider">
+                          ✦ CAM_REFID: {shot.id.toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Bottom Info Blocks */}
+                      <div className="p-4 border-t border-zinc-900 bg-black/60">
+                        <h4 className="font-sans font-black text-xs sm:text-sm text-white tracking-tight uppercase group-hover/look:text-[#EFFF00] transition-colors">
+                          {shot.label}
+                        </h4>
+                        <p className="text-zinc-550 text-[11px] font-sans mt-1 leading-relaxed">
+                          {shot.desc}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
               </div>
             </div>
 

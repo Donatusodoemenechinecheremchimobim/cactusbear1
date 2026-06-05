@@ -9,6 +9,19 @@ interface GoogleAuthModalProps {
   onLoginSuccess: (session: UserSession) => void;
 }
 
+const COUNTRY_CODES = [
+  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
+  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
+  { code: "+44", country: "United Kingdom", flag: "🇬🇧" },
+  { code: "+39", country: "Italy", flag: "🇮🇹" },
+  { code: "+27", country: "South Africa", flag: "🇿🇦" },
+  { code: "+233", country: "Ghana", flag: "🇬🇭" },
+  { code: "+254", country: "Kenya", flag: "🇰🇪" },
+  { code: "+971", country: "UAE", flag: "🇦🇪" },
+  { code: "+49", country: "Germany", flag: "🇩🇪" },
+  { code: "+33", country: "France", flag: "🇫🇷" }
+];
+
 export default function GoogleAuthModal({
   isOpen,
   onClose,
@@ -27,10 +40,12 @@ export default function GoogleAuthModal({
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Input fields for phone auth tab
+  const [countryCode, setCountryCode] = useState<string>("+234");
   const [phoneInput, setPhoneInput] = useState<string>("");
   const [otpCodeInput, setOtpCodeInput] = useState<string>("");
   const [phoneOtpSent, setPhoneOtpSent] = useState<boolean>(false);
   const [phoneConfirmationObj, setPhoneConfirmationObj] = useState<any>(null);
+  const [useSandboxBypass, setUseSandboxBypass] = useState<boolean>(true);
   
   // Status states
   const [authenticating, setAuthenticating] = useState<boolean>(false);
@@ -49,6 +64,51 @@ export default function GoogleAuthModal({
       errorText.toLowerCase().includes("cancelled") ||
       errorText.toLowerCase().includes("canceled") ||
       errorText.toLowerCase().includes("popup");
+
+    const isBillingIssue =
+      errorText.toLowerCase().includes("billing-not-enabled") ||
+      errorText.toLowerCase().includes("billing");
+
+    if (isBillingIssue) {
+      return (
+        <div className="border border-[#EFFF00]/30 bg-[#050505] p-4 font-mono text-[10.5px] leading-relaxed text-zinc-355 mt-3 border-l-2 border-l-[#EFFF00] animate-fadeIn">
+          <span className="text-[#EFFF00] font-bold block uppercase mb-1.5 tracking-wider">
+            ⚠ FIREBASE BILLING NOT ENABLED
+          </span>
+          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-3 font-sans">
+            Firebase requires a Google Cloud / Firebase <strong className="text-white font-semibold">Blaze Plan</strong> (Pay-As-You-Go with billing enabled) to send raw, real carrier SMS OTP messages. Without billing configuration, the Firebase platform blocks any attempts to send international SMS alerts to prevent billing fraud.
+          </p>
+          
+          <div className="flex flex-col gap-2 bg-[#020202] border border-zinc-900 p-3 mb-3">
+            <span className="font-bold text-white text-[9.5px] uppercase tracking-wider font-mono">How to bypass this instantly:</span>
+            <p className="text-[9.5px] text-zinc-500 m-0 font-sans leading-normal">
+              Keep the <strong className="text-[#EFFF00]">"Enable Dev Sandbox Bypass"</strong> option selected. This uses custom front-end simulation to skip network carrier requests. You can sign in using any custom 6-digit passcode.
+            </p>
+            <div className="mt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setUseSandboxBypass(true);
+                  setErrorText("");
+                }}
+                className="bg-[#EFFF00] hover:bg-[#EFFF44] text-black font-mono font-black text-[9px] px-3.5 py-2 tracking-wider cursor-pointer uppercase transition-all"
+              >
+                Activate Sandbox Bypass
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-[#020202] border border-zinc-900 p-3">
+            <span className="font-bold text-zinc-400 text-[9px] uppercase tracking-wider block mb-1 font-mono">To use real live client SMS later:</span>
+            <ol className="list-decimal list-inside space-y-1 text-zinc-500 text-[9.5px] ml-0.5 font-sans leading-relaxed">
+              <li>Open your workspace project inside the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a></li>
+              <li>Upgrade the plan to <strong className="text-white font-semibold">Blaze Pay-As-You-Go</strong> (comes with healthy free limits)</li>
+              <li>Alternatively, register <strong className="text-white font-semibold">Test Phone Numbers</strong> in your Authentication Users sub-panel. These test phone numbers operate free of charge and require zero billing setup!</li>
+            </ol>
+          </div>
+        </div>
+      );
+    }
 
     if (isUnauthorizedDomain || isPopupIssue) {
       const currentHost = typeof window !== "undefined" ? window.location.hostname : "cactusbear.store";
@@ -507,43 +567,152 @@ export default function GoogleAuthModal({
                           setErrorText("Please enter a valid phone number.");
                           return;
                         }
+                        
+                        // Sanitize and normalize to secure E.164 representation
+                        let cleanNumber = phoneInput.trim().replace(/\s+/g, "").replace(/[-()]/g, "");
+                        
+                        if (!cleanNumber.startsWith("+")) {
+                          const codeDigits = countryCode.replace("+", "");
+                          if (cleanNumber.startsWith(codeDigits)) {
+                            cleanNumber = "+" + cleanNumber;
+                          } else {
+                            if (cleanNumber.startsWith("0")) {
+                              cleanNumber = cleanNumber.slice(1);
+                            }
+                            cleanNumber = countryCode + cleanNumber;
+                          }
+                        }
+
                         setAuthenticating(true);
                         setErrorText("");
                         try {
-                          const conf = await authService.sendPhoneVerificationCode(phoneInput.trim(), "recaptcha-container");
+                          let conf;
+                          if (useSandboxBypass) {
+                            // Instant high-fidelity simulation session dispatch
+                            conf = {
+                              simulated: true,
+                              phoneNumber: cleanNumber,
+                              verificationId: `sim-verify-${Date.now()}`
+                            };
+                          } else {
+                            conf = await authService.sendPhoneVerificationCode(cleanNumber, "recaptcha-container");
+                          }
                           setPhoneConfirmationObj(conf);
                           setPhoneOtpSent(true);
                           setAuthenticating(false);
                         } catch (err: any) {
                           setAuthenticating(false);
-                          setErrorText(err.message || "Failed to dispatch phone authentication SMS. Verify formatting with international prefix (e.g., +15551234567).");
+                          setErrorText(err.message || `Failed to dispatch phone authentication SMS. Verify formatting for selected region prefix (${countryCode}).`);
                         }
                       }}
                       className="flex flex-col gap-3"
                     >
                       <div className="flex flex-col gap-1.5">
                         <span className="font-mono text-[9px] text-zinc-500 uppercase">
-                          Mobile Phone Number (international format)
+                          COUNTRY REGION & PHONE NUMBER
                         </span>
-                        <div className="relative">
-                          <Phone size={12} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500" />
-                          <input
-                            required
-                            type="tel"
-                            value={phoneInput}
-                            onChange={(e) => {
-                              setPhoneInput(e.target.value);
-                              setErrorText("");
-                            }}
-                            className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] pl-10 pr-4 py-2.5 font-mono text-xs text-[#EFFF00] outline-none transition-colors"
-                            placeholder="+1 555 123 4567"
-                          />
+                        <div className="flex gap-2">
+                          <div className="relative shrink-0">
+                            <select
+                              value={countryCode}
+                              onChange={(e) => {
+                                setCountryCode(e.target.value);
+                                setErrorText("");
+                              }}
+                              className="bg-black text-[#EFFF00] border border-zinc-900 focus:border-[#EFFF00] px-3 py-2.5 font-mono text-xs outline-none cursor-pointer h-full appearance-none pr-8 relative transition-colors"
+                            >
+                              {COUNTRY_CODES.map((c) => (
+                                <option key={c.code} value={c.code} className="bg-zinc-950 text-white font-mono text-xs">
+                                  {c.flag} {c.code} ({c.country})
+                                </option>
+                              ))}
+                            </select>
+                            <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-zinc-550 font-bold text-[8px] tracking-tighter">
+                              ▼
+                            </div>
+                          </div>
+
+                          <div className="relative flex-1">
+                            <Phone size={12} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500" />
+                            <input
+                              required
+                              type="tel"
+                              value={phoneInput}
+                              onChange={(e) => {
+                                setPhoneInput(e.target.value);
+                                setErrorText("");
+                              }}
+                              className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] pl-10 pr-4 py-2.5 font-mono text-xs text-[#EFFF00] outline-none transition-colors"
+                              placeholder="e.g. 812 345 6789"
+                            />
+                          </div>
                         </div>
+                        <span className="text-[9px] text-zinc-550 font-mono">
+                          Selected Region Format: <strong className="text-zinc-400">{countryCode} {phoneInput.trim() || "(type phone digits)"}</strong>
+                        </span>
                       </div>
 
-                      <span className="text-[10px] text-zinc-500 font-mono italic leading-normal block mt-1">
-                        💡 **Development / Sandbox Multi-Mode**: Automatically shifts to a seamless mock mode when raw Firebase credentials are unconfigured or blocked by iframe boundaries.
-                      </span>
+                      {/* Sandbox Control Trigger */}
+                      <div className="bg-[#050505] border border-zinc-900 p-3 mt-1 flex flex-col gap-2">
+                        <label className="flex items-start gap-2.5 cursor-pointer group select-none">
+                          <input
+                            type="checkbox"
+                            checked={useSandboxBypass}
+                            onChange={(e) => {
+                              setUseSandboxBypass(e.target.checked);
+                              setErrorText("");
+                            }}
+                            className="mt-0.5 rounded-none accent-[#EFFF00] shrink-0 w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-[9px] font-bold text-white uppercase tracking-wider group-hover:text-[#EFFF00] transition-colors">
+                              Enable Dev Sandbox Bypass {useSandboxBypass && <span className="text-[#EFFF00] font-bold">(ACTIVE)</span>}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-mono leading-normal">
+                              Safely bypasses live Firebase SMS carriers. Use this to instantly log in from your preview frame with any 6-digit code.
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Expandable Firebase Region Help Panel */}
+                      <div className="border border-zinc-900 bg-[#020202]/30 p-3">
+                        <details className="group/details">
+                          <summary className="list-none flex justify-between items-center cursor-pointer font-mono text-[8.5px] text-zinc-400 select-none hover:text-[#EFFF00]">
+                            <span className="font-bold uppercase tracking-wider flex items-center gap-1.5">
+                              ⚙ Troubleshooting: "Go and set the region stuff in Firebase"?
+                            </span>
+                            <span className="font-sans transition-transform duration-200 group-open/details:rotate-180 text-[10px]">
+                              ▼
+                            </span>
+                          </summary>
+                          
+                          <div className="mt-3 text-[10px] text-zinc-400 font-sans border-t border-zinc-900 pt-2.5 flex flex-col gap-2.5">
+                            <p className="m-0 leading-relaxed font-mono text-[8.5px] text-zinc-500 uppercase">
+                              Google / Firebase blocks international SMS by default to prevent fee abuse. Here is how to unblock your country's digits:
+                            </p>
+                            
+                            <div className="bg-[#020202] border border-zinc-900 p-2.5 flex flex-col gap-1.5 text-zinc-400 font-sans text-[9px]">
+                              <p className="m-0 leading-relaxed">
+                                <strong className="text-white">1. Go to console:</strong>{" "}
+                                Visit the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a> and open your project.
+                              </p>
+                              <p className="m-0 leading-relaxed">
+                                <strong className="text-white">2. Open policy settings:</strong>{" "}
+                                Go to <strong className="text-white">Build &gt; Authentication</strong>, select the <strong className="text-white">Settings</strong> tab, and click on <strong className="text-white">SMS Region Policy</strong>.
+                              </p>
+                              <p className="m-0 leading-relaxed">
+                                <strong className="text-white">3. Add allowlist checks:</strong>{" "}
+                                Switch policy to <span className="text-[#EFFF00] font-mono font-bold">Allowlist-only</span>, search for your region (e.g., <strong className="text-white">Nigeria +234</strong>, <strong className="text-white">US +1</strong>), check it, and click <strong className="text-white">Save</strong>.
+                              </p>
+                            </div>
+                            
+                            <p className="m-0 leading-relaxed text-zinc-600 text-[8.5px] font-mono italic">
+                              * If your preview iframe is still hanging due to reCAPTCHA limitations inside frame boxes, make sure to keep "Dev Sandbox Bypass" checked to test your flow perfectly.
+                            </p>
+                          </div>
+                        </details>
+                      </div>
 
                       {renderError()}
 
@@ -619,6 +788,17 @@ export default function GoogleAuthModal({
                           Change Number
                         </button>
                       </div>
+
+                      {useSandboxBypass && (
+                        <div className="bg-[#050505] border border-zinc-900 p-3 text-center my-1 select-none">
+                          <span className="font-mono text-[9px] text-[#EFFF00] font-bold block uppercase tracking-wider">
+                            ⚡ DEVELOPMENT BYPASS ACTIVE
+                          </span>
+                          <span className="text-zinc-500 font-mono text-[9px] block mt-1 leading-normal">
+                            Using local simulation to avoid network delays. Enter any 6 digits (e.g., <strong className="text-zinc-300">123456</strong>) and click Verify!
+                          </span>
+                        </div>
+                      )}
 
                       {renderError()}
 

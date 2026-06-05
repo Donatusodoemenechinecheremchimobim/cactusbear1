@@ -134,22 +134,21 @@ export default function CartDrawer({
           amount: vaultTotal * 100, // convert Naira to kobo (required by Paystack API)
           currency: "NGN",
           ref: generatedRef,
-          callback: async (response: any) => {
+          onSuccess: (response: any) => {
             setSubmitting(true);
-            try {
-              const savedOrder = await dbService.addOrder({
-                name: shippingForm.name,
-                email: shippingForm.email,
-                phone: shippingForm.phone,
-                address: shippingForm.address,
-                city: shippingForm.city,
-                country: shippingForm.country,
-                items: cart,
-                totalPrice: vaultTotal,
-                paymentMethod: "paystack",
-                paymentStatus: "PAID",
-                paymentReference: response.reference,
-              });
+            dbService.addOrder({
+              name: shippingForm.name,
+              email: shippingForm.email,
+              phone: shippingForm.phone,
+              address: shippingForm.address,
+              city: shippingForm.city,
+              country: shippingForm.country,
+              items: cart,
+              totalPrice: vaultTotal,
+              paymentMethod: "paystack",
+              paymentStatus: "PAID",
+              paymentReference: response.reference,
+            }).then((savedOrder) => {
               setOrderHash(savedOrder.id);
               setPaymentRef(response.reference);
 
@@ -168,13 +167,54 @@ export default function CartDrawer({
               setCheckoutStep("confirm");
               onAddToast?.(`PAYMENT APPROVED // DESPATCH DIRECTIVE FILED: ${savedOrder.id}`, "success");
               triggerWhatsAppNotification(savedOrder.id, response.reference, "Paystack (Online Card/Transfer)");
-            } catch (err: any) {
+            }).catch((err: any) => {
               console.error("Order callback failed:", err);
               onAddToast?.(`DATABASE REFERENCE WRITE ERROR: ${err?.message}`, "alert");
               setCheckoutError(`DATABASE VERIFICATION REJECTED: ${err?.message || "CHECKOUT LOGGING ERROR"}`);
-            } finally {
+            }).finally(() => {
               setSubmitting(false);
-            }
+            });
+          },
+          callback: (response: any) => {
+            setSubmitting(true);
+            dbService.addOrder({
+              name: shippingForm.name,
+              email: shippingForm.email,
+              phone: shippingForm.phone,
+              address: shippingForm.address,
+              city: shippingForm.city,
+              country: shippingForm.country,
+              items: cart,
+              totalPrice: vaultTotal,
+              paymentMethod: "paystack",
+              paymentStatus: "PAID",
+              paymentReference: response.reference,
+            }).then((savedOrder) => {
+              setOrderHash(savedOrder.id);
+              setPaymentRef(response.reference);
+
+              // Clear basket & notify local device caches
+              try {
+                const localTrackIds = JSON.parse(localStorage.getItem("cactus_bear_my_order_ids") || "[]");
+                if (!localTrackIds.includes(savedOrder.id)) {
+                  localTrackIds.push(savedOrder.id);
+                  localStorage.setItem("cactus_bear_my_order_ids", JSON.stringify(localTrackIds));
+                }
+                localStorage.setItem("cactus_bear_last_checkout_email", shippingForm.email);
+              } catch (storageErr) {
+                console.warn("Could not write to local registry:", storageErr);
+              }
+
+              setCheckoutStep("confirm");
+              onAddToast?.(`PAYMENT APPROVED // DESPATCH DIRECTIVE FILED: ${savedOrder.id}`, "success");
+              triggerWhatsAppNotification(savedOrder.id, response.reference, "Paystack (Online Card/Transfer)");
+            }).catch((err: any) => {
+              console.error("Order callback failed:", err);
+              onAddToast?.(`DATABASE REFERENCE WRITE ERROR: ${err?.message}`, "alert");
+              setCheckoutError(`DATABASE VERIFICATION REJECTED: ${err?.message || "CHECKOUT LOGGING ERROR"}`);
+            }).finally(() => {
+              setSubmitting(false);
+            });
           },
           onClose: () => {
             onAddToast?.("TRANSACTION DISMISSED BY CLIENT // SECURED VAULT SECURED", "info");
