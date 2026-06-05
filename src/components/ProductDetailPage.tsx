@@ -395,11 +395,11 @@ export default function ProductDetailPage({
               {product.description}
             </p>
 
-            {/* COLOR MATRIX SECTOR */}
+            {/* COLORWAYS */}
             <div className="mb-6 pb-6 border-b border-zinc-950">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-[10px] font-mono text-zinc-550 uppercase tracking-widest font-black">
-                  01 / COLORWAY VARIATION
+                  01 / COLORWAY
                 </span>
                 <span className="font-mono text-[9px] text-[#EFFF00] uppercase">
                   {selectedColor.name}
@@ -428,11 +428,11 @@ export default function ProductDetailPage({
               </div>
             </div>
 
-            {/* SIZING MATRIX SECTOR */}
+            {/* SIZING */}
             <div className="mb-6 pb-6 border-b border-zinc-950">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-[10px] font-mono text-zinc-550 uppercase tracking-widest font-black">
-                  02 / MEASURE SIZE SELECT
+                  02 / SELECT SIZE
                 </span>
                 <span className="font-mono text-[10px] text-zinc-450 hover:text-white transition-colors cursor-pointer flex items-center gap-1">
                   <Scissors size={10} className="text-[#EFFF00]" />
@@ -475,7 +475,7 @@ export default function ProductDetailPage({
                   {adding ? (
                     <>
                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      ADDING SPECIMEN...
+                      ADDING TO BAG...
                     </>
                   ) : added ? (
                     <>
@@ -529,7 +529,7 @@ export default function ProductDetailPage({
                 className="w-full h-11 border border-zinc-900 hover:border-zinc-700 bg-black text-zinc-400 hover:text-white font-mono text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-none cursor-pointer"
               >
                 <QrCode size={13} className="text-[#EFFF00]" />
-                {showQrCode ? "HIDE AUTHENTIC TOKEN ID" : "GENERATE AUTHENTIC TOKEN ID"}
+                {showQrCode ? "HIDE DETAILS" : "VERIFY ITEM AUTHENTICITY"}
               </button>
             </div>
 

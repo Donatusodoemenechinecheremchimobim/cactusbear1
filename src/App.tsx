@@ -12,6 +12,7 @@ import {
   Globe,
   Plus,
   ArrowDown,
+  ArrowUp,
   Cpu,
   Menu,
   X,
@@ -74,6 +75,7 @@ export default function App() {
   const [alertSubscribed, setAlertSubscribed] = useState<boolean>(false);
   const [alertError, setAlertError] = useState<string>("");
   const [alertSubmitting, setAlertSubmitting] = useState<boolean>(false);
+  const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
 
   // Auth, products and Admin Workspace modal states
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
@@ -231,6 +233,19 @@ export default function App() {
     return () => {
       unsubscribeAuth();
     };
+  }, []);
+
+  // Monitor scroll height to conditionally reveal back-to-top luxury quick navigation
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 450) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Sync state helpers
@@ -1644,6 +1659,23 @@ export default function App() {
           </nav>
         </div>
       </div>
+
+      {/* RETURNING TO APEX - BACK TO TOP BUTTON WITH HIGHEST BRAND STYLING INTEGRITY */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95, transition: { duration: 0.15 } }}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="fixed bottom-20 md:bottom-24 right-4 md:right-8 z-45 bg-zinc-950/95 hover:bg-[#EFFF00] text-zinc-400 hover:text-black border border-zinc-900 hover:border-[#EFFF00] py-3 px-3.5 sm:px-4 font-mono text-[8px] tracking-[0.25em] uppercase transition-all duration-300 shadow-[0_8px_30px_rgba(0,0,0,0.95)] cursor-pointer flex items-center gap-2 group"
+          >
+            <ArrowUp size={11} className="text-[#EFFF00] group-hover:text-black transition-colors" />
+            <span className="hidden xs:inline">APEX // TOP</span>
+            <span className="xs:hidden">TOP</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
     </div>
   );

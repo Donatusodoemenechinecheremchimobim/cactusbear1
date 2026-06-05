@@ -1436,8 +1436,8 @@ export default function AdminWorkspaceModal({
                       )}
                     </div>
 
-                    <p className="text-zinc-550 text-xs font-sans leading-relaxed">
-                      Deploy direct micro-dispatchers to bypass Make.com completely. When new pre-orders are logged in Firestore, the system will fire direct HTTP packets asynchronously.
+                    <p className="text-zinc-500 text-xs font-sans leading-relaxed">
+                      Synchronize real-time pre-order details with your external inventory systems and tracking channels automatically when notifications are triggered.
                     </p>
 
                     {/* Webhook Connection */}

@@ -437,19 +437,19 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
 
       {/* Info Blocks and purchase commands */}
       <div className="p-4 border-t border-zinc-900 bg-black/60">
-        <div className="flex justify-between items-start gap-1">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:justify-between sm:items-start sm:gap-2">
           <h3 
             onClick={handleShowDetails}
-            className="font-sans font-extrabold text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer"
+            className="font-sans font-extrabold text-xs sm:text-sm text-white tracking-tight uppercase group-hover:text-[#EFFF00] transition-colors cursor-pointer line-clamp-2 min-h-[2rem] sm:min-h-0"
           >
             {product.name}
           </h3>
-          <span className="font-mono text-xs font-black text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5">
+          <span className="font-mono text-[10px] sm:text-xs font-black text-[#EFFF00] sm:text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5 whitespace-nowrap self-start">
             ₦{product.price.toLocaleString()}
           </span>
         </div>
 
-        <p className="text-zinc-500 text-[11px] font-sans mt-1.5 line-clamp-2 h-8 leading-tight">
+        <p className="text-zinc-550 text-[11px] font-sans mt-1.5 line-clamp-2 h-8 leading-tight">
           {product.description}
         </p>
 
@@ -457,9 +457,9 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
         <div className="mt-4 flex flex-col gap-3 pt-3 border-t border-zinc-950">
           
           {/* Colors row */}
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
             <span className="text-[9px] font-mono text-zinc-500 uppercase">COLOR</span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap">
               {product.colors.map((color) => {
                 const isCSelected = selectedColor.name === color.name;
                 return (
@@ -478,8 +478,8 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
           </div>
 
           {/* Sizing choosing row */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2.5">
-            <div className="flex gap-1.5 items-center">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <span className="text-[9px] font-mono text-zinc-500 uppercase">SIZE</span>
               <div className="flex gap-1 flex-wrap">
                 {product.sizes.map((sz) => {
@@ -665,11 +665,11 @@ export function ProductCardSkeleton() {
 
       {/* Info Blocks and purchase commands */}
       <div className="p-4 border-t border-zinc-900 bg-black/60">
-        <div className="flex justify-between items-start gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start sm:gap-2">
           {/* Product name skeleton */}
           <div className="h-4 bg-zinc-900 rounded w-2/3 my-1" />
           {/* Price skeleton */}
-          <div className="h-5 bg-zinc-900 rounded w-12" />
+          <div className="h-5 bg-zinc-900 rounded w-14" />
         </div>
 
         {/* Description lines */}
@@ -681,7 +681,7 @@ export function ProductCardSkeleton() {
         {/* Interfacing panel toggling colors and sizes */}
         <div className="mt-4 flex flex-col gap-3.5 pt-3.5 border-t border-zinc-950">
           {/* Colors row */}
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
             <div className="h-2.5 bg-zinc-900 w-10 rounded" />
             <div className="flex gap-1.5">
               <div className="w-3.5 h-3.5 bg-zinc-900" />
@@ -691,8 +691,8 @@ export function ProductCardSkeleton() {
           </div>
 
           {/* Sizing choosing row */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2.5">
-            <div className="flex gap-1.5 items-center">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5">
               <div className="h-2.5 bg-zinc-900 w-8 rounded" />
               <div className="flex gap-1">
                 <div className="w-6 h-4 bg-zinc-900" />
