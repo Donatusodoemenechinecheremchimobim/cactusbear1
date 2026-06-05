@@ -207,15 +207,18 @@ export default function AdminWorkspaceModal({
         const qty = it.quantity || 1;
         const price = it.product.price;
         const total = price * qty;
+        const actualPrice = price < 1000 ? price * 1500 : price;
+        const actualTotal = actualPrice * qty;
         return `[Item ${i + 1}] ${pName}\n` +
                `   • SKU/ID: ${sku}\n` +
                `   • Size: ${size}\n` +
                `   • Color: ${color}\n` +
                `   • Quantity: ${qty}\n` +
-               `   • Unit Price: $${price} USD\n` +
-               `   • Total for Item: $${total} USD`;
+               `   • Unit Price: ₦${actualPrice.toLocaleString()} NGN\n` +
+               `   • Total for Item: ₦${actualTotal.toLocaleString()} NGN`;
       }).join("\n\n");
 
+      const actualTestTotal = testOrder.totalPrice < 1000 ? testOrder.totalPrice * 1500 : testOrder.totalPrice;
       const formattedMessage = 
         `✦ MANUAL TEST CACTUS BEAR ORDER: ${testOrder.id} ✦\n\n` +
         `• Customer Email: ${testOrder.email}\n` +
@@ -225,8 +228,7 @@ export default function AdminWorkspaceModal({
         `  ${testOrder.shippingAddress.addressLine}\n` +
         `  City: ${testOrder.shippingAddress.city}\n` +
         `  Country: Nigeria\n\n` +
-        `• Total Value NGN (₦1,500/$1 Conversion): ₦${(testOrder.totalPrice * 1500).toLocaleString()}\n` +
-        `• Total Value USD: $${testOrder.totalPrice} USD\n\n` +
+        `• Total Value: ₦${actualTestTotal.toLocaleString()} NGN\n\n` +
         `• Items Breakdown:\n\n${detailedItemsList}\n\n` +
         `✦ END OF TEST DISPATCH ✦`;
 
@@ -726,7 +728,7 @@ export default function AdminWorkspaceModal({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1">
-                        <label className="font-mono text-[9px] text-zinc-500 uppercase">RETAIL PRICE ($ USD)</label>
+                        <label className="font-mono text-[9px] text-zinc-500 uppercase">RETAIL PRICE (₦ NAIRA)</label>
                         <input
                           required
                           type="number"

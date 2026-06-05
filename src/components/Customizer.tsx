@@ -349,7 +349,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
             <div className="w-full flex justify-between items-center text-zinc-500 font-mono text-[10px] pt-4 border-t border-zinc-900">
               <span>FABRIC: 100% COTTON</span>
               <span>POSITION: {position.toUpperCase()}</span>
-              <span>PRICE: ${selectedProduct.price}.00 USD</span>
+              <span>PRICE: ₦{selectedProduct.price.toLocaleString()}</span>
             </div>
           </div>
 
@@ -530,7 +530,7 @@ export default function Customizer({ onAddCustomItem }: CustomizerProps) {
                     UNIT PRICE (STITCHED TO ORDER)
                   </span>
                   <span className="text-3xl font-extrabold font-sans tracking-tight">
-                    ${selectedProduct.price}.00
+                    ₦{selectedProduct.price.toLocaleString()}
                   </span>
                 </div>
                 <div className="text-right">

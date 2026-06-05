@@ -5,7 +5,7 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     id: "cb-jersey-01",
     name: "CAMO MULTI-SPECS FIELD POLO",
     category: "Tees",
-    price: 95,
+    price: 142500,
     sku: "CB-POLO-01",
     description: "Athletic polo jersey engineered with high-strength performance knit body. Features vintage woodland camouflage paneling along the sleeves and shoulders, structured collared neck detail, front 'Cactus Bear' handwritten script, a highly-detailed white realistic crown of thorns chest logo, and custom numeric '00' camouflage prints on the main body.",
     details: [
@@ -28,7 +28,7 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     id: "cb-buttonup-02",
     name: "STITCH WOVEN SEED BOX SHIRT",
     category: "Outerwear",
-    price: 110,
+    price: 165000,
     sku: "CB-SH-02",
     description: "Premium oversized box-fitting short-sleeve button-up shirt tailored from heavyweight structured linen-cotton drape canvas. Fastened with polished natural-grain buttons and flat-set classic notched collar. Detailed with a contrast graphic realistic crown of thorns with 'Cactus Bear' branding screen-printed elegantly on the left chest pocket.",
     details: [
@@ -50,7 +50,7 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     id: "cb-crop-03",
     name: "CRAFT SIGNATURE HIGH-CROP TEE",
     category: "Tees",
-    price: 65,
+    price: 97500,
     sku: "CB-CROP-03",
     description: "Ultra-fine combed cotton short crop top with a signature raw-edge boxy drape. Reinforced flat shoulders, double stitched sleeves, and high-definition central screen-print featuring our realistic white crown of thorns paired with clean signature brand writing.",
     details: [
@@ -72,7 +72,7 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     id: "cb-sweatshirt-04",
     name: "GIBRAN PHYSICIAN HEAVE-FLEECE CREW",
     category: "Outerwear",
-    price: 150,
+    price: 225000,
     sku: "CB-GIBRAN-04",
     description: "Heavyweight French Terry fleece crewneck sweatshirt featuring our highly detailed realistic white crown of thorns artwork accompanied by Kahlil Gibran's timeless poetic wisdom: 'Your pain is the breaking of the shell that encloses your understanding. It is the bitter potion by which the physician within you heals your sick self. Therefore, trust the physician and drink his remedy...'",
     details: [
@@ -95,7 +95,7 @@ export const CACTUS_BEAR_PRODUCTS: Product[] = [
     id: "cb-trucker-05",
     name: "TRADITIONAL CROWN FOAM TRUCKER",
     category: "Headwear",
-    price: 48,
+    price: 72000,
     sku: "CB-CP-05",
     description: "Authentic high-profile 5-panel foam trucker cap. High-density breathable mesh back paneling with adjustable snapback strap. Structured padded white foam crown front highlighted by our sharp scribbled crown of thorns logomark and hand-lettered signature script.",
     details: [

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail, Heart } from "lucide-react";
+import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail, Heart, CreditCard } from "lucide-react";
 import { CartItem, Product } from "../types";
 import GlowCrown from "./GlowCrown";
 import { dbService } from "../services/firebase";
@@ -33,6 +33,8 @@ export default function CartDrawer({
 }: CartDrawerProps) {
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "shipping" | "confirm">("cart");
   const [activeSection, setActiveSection] = useState<"bag" | "wishlist">("bag");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "transfer">("paystack");
+  const [paymentRef, setPaymentRef] = useState<string>("");
   const cartItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
   
   // State-area selectors for Nigeria
@@ -84,70 +86,161 @@ export default function CartDrawer({
 
   // Math equations
   const cartSubtotal = cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0);
-  const coreShippingFee = cartSubtotal > 300 ? 0 : cart.length > 0 ? 15 : 0;
+  const coreShippingFee = cartSubtotal > 300000 ? 0 : cart.length > 0 ? 15000 : 0;
   const vaultTotal = cartSubtotal + coreShippingFee;
+
+  const loadPaystackScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).PaystackPop) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.id = "paystack-script";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const triggerSecureCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     
     try {
-      const savedOrder = await dbService.addOrder({
-        name: shippingForm.name,
-        email: shippingForm.email,
-        phone: shippingForm.phone,
-        address: shippingForm.address,
-        city: shippingForm.city,
-        country: shippingForm.country,
-        items: cart,
-        totalPrice: vaultTotal
-      });
-      setOrderHash(savedOrder.id);
-
-      // Save order info to local tracking lists for seamless reference-free list tracking
-      try {
-        const localTrackIds = JSON.parse(localStorage.getItem("cactus_bear_my_order_ids") || "[]");
-        if (!localTrackIds.includes(savedOrder.id)) {
-          localTrackIds.push(savedOrder.id);
-          localStorage.setItem("cactus_bear_my_order_ids", JSON.stringify(localTrackIds));
+      if (paymentMethod === "paystack") {
+        const loaded = await loadPaystackScript();
+        if (!loaded) {
+          onAddToast?.("FAILED TO CONNECT TO PAYSTACK ENTRANCE. NETWORK FAULT.", "alert");
+          setSubmitting(false);
+          return;
         }
-        localStorage.setItem("cactus_bear_last_checkout_email", shippingForm.email);
-      } catch (storageErr) {
-        console.warn("Could not save to local device registers:", storageErr);
+
+        const paystackKey = (import.meta as any).env?.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_d34f0c058eb7e63b65287f34c2ab1955fb8153ce";
+        const generatedRef = `CB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        const paystackInstance = (window as any).PaystackPop.setup({
+          key: paystackKey,
+          email: shippingForm.email,
+          amount: vaultTotal * 100, // convert Naira to kobo (required by Paystack API)
+          currency: "NGN",
+          ref: generatedRef,
+          callback: async (response: any) => {
+            setSubmitting(true);
+            try {
+              const savedOrder = await dbService.addOrder({
+                name: shippingForm.name,
+                email: shippingForm.email,
+                phone: shippingForm.phone,
+                address: shippingForm.address,
+                city: shippingForm.city,
+                country: shippingForm.country,
+                items: cart,
+                totalPrice: vaultTotal,
+                paymentMethod: "paystack",
+                paymentStatus: "PAID",
+                paymentReference: response.reference,
+              });
+              setOrderHash(savedOrder.id);
+              setPaymentRef(response.reference);
+
+              // Clear basket & notify local device caches
+              try {
+                const localTrackIds = JSON.parse(localStorage.getItem("cactus_bear_my_order_ids") || "[]");
+                if (!localTrackIds.includes(savedOrder.id)) {
+                  localTrackIds.push(savedOrder.id);
+                  localStorage.setItem("cactus_bear_my_order_ids", JSON.stringify(localTrackIds));
+                }
+                localStorage.setItem("cactus_bear_last_checkout_email", shippingForm.email);
+              } catch (storageErr) {
+                console.warn("Could not write to local registry:", storageErr);
+              }
+
+              setCheckoutStep("confirm");
+              onAddToast?.(`PAYMENT APPROVED // DESPATCH DIRECTIVE FILED: ${savedOrder.id}`, "success");
+              triggerWhatsAppNotification(savedOrder.id, response.reference, "Paystack (Online Card/Transfer)");
+            } catch (err: any) {
+              console.error("Order callback failed:", err);
+              onAddToast?.(`DATABASE REFERENCE WRITE ERROR: ${err?.message}`, "alert");
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          onClose: () => {
+            onAddToast?.("TRANSACTION DISMISSED BY CLIENT // SECURED VAULT SECURED", "info");
+            setSubmitting(false);
+          }
+        });
+
+        paystackInstance.openIframe();
+      } else {
+        // Direct bank transfer option
+        const savedOrder = await dbService.addOrder({
+          name: shippingForm.name,
+          email: shippingForm.email,
+          phone: shippingForm.phone,
+          address: shippingForm.address,
+          city: shippingForm.city,
+          country: shippingForm.country,
+          items: cart,
+          totalPrice: vaultTotal,
+          paymentMethod: "bank_transfer",
+          paymentStatus: "PENDING_VERIFICATION",
+          paymentReference: "BT-" + Date.now().toString().slice(-6),
+        });
+        setOrderHash(savedOrder.id);
+        const manualRef = "BT-" + Date.now().toString().slice(-6);
+        setPaymentRef(manualRef);
+
+        try {
+          const localTrackIds = JSON.parse(localStorage.getItem("cactus_bear_my_order_ids") || "[]");
+          if (!localTrackIds.includes(savedOrder.id)) {
+            localTrackIds.push(savedOrder.id);
+            localStorage.setItem("cactus_bear_my_order_ids", JSON.stringify(localTrackIds));
+          }
+          localStorage.setItem("cactus_bear_last_checkout_email", shippingForm.email);
+        } catch (storageErr) {
+          console.warn("Could not save to local catalog:", storageErr);
+        }
+
+        setCheckoutStep("confirm");
+        onAddToast?.(`PRE-ORDER SAVED // SECURING DIRECT BANK VERIFICATION`, "success");
+        triggerWhatsAppNotification(savedOrder.id, manualRef, "Manual Bank Transfer");
+        setSubmitting(false);
       }
-
-      setCheckoutStep("confirm");
-      onAddToast?.(`SECURE ORDER RECIEVED // STATUS: ACTIVE // ID: ${savedOrder.id}`, "success");
-
-      // Auto-trigger WhatsApp dispatch message directly to the administrator
-      const cleanPhoneForWhatsapp = adminWhatsapp.replace(/[^0-9]/g, "");
-      const whatsappText = `*CACTUS BEAR DESIGN LABS - NEW PRE-ORDER DESIGNATED*\n` +
-        `---------------------------------------------\n` +
-        `*Order Reference:* ${savedOrder.id}\n` +
-        `*Patron Name:* ${shippingForm.name}\n` +
-        `*Patron Email:* ${shippingForm.email}\n` +
-        `*Contact Number:* ${shippingForm.phone}\n` +
-        `*Delivery Location Area:* ${shippingForm.address}, ${shippingForm.city}, ${shippingForm.country}\n` +
-        `---------------------------------------------\n` +
-        `*ITEMS:* \n` +
-        cart.map(item => `• ${item.quantity}x ${item.product.name} (Size: ${item.selectedSize}, Color: ${item.selectedColor.name})`).join("\n") +
-        `\n---------------------------------------------\n` +
-        `*TOTAL VALUE:* $${vaultTotal}.00 (approx. ₦${(vaultTotal * 1500).toLocaleString()})\n` +
-        `*CACTUS BEAR SECURE PLATFORM TRACKER - LAGOS, NIGERIA*`;
-
-      const whatsappUrl = `https://wa.me/${cleanPhoneForWhatsapp}?text=${encodeURIComponent(whatsappText)}`;
-      
-      // Execute non-blocking browser redirect window open
-      setTimeout(() => {
-        window.open(whatsappUrl, "_blank");
-      }, 500);
-
     } catch (err: any) {
       console.error("Order creation failed:", err);
-      onAddToast?.(`ORDER DISPATCH REJECTED: ${err?.message || "DATABASE TIMEOUT"}`, "alert");
-    } finally {
+      onAddToast?.(`ORDER REJECTED: ${err?.message || "SYSTEM BUSY"}`, "alert");
       setSubmitting(false);
     }
+  };
+
+  const triggerWhatsAppNotification = (orderId: string, refWord: string, methodText: string) => {
+    const cleanPhoneForWhatsapp = adminWhatsapp.replace(/[^0-9]/g, "");
+    const whatsappText = `*CACTUS BEAR DESIGN LABS - NEW ORDER DISPATCHED*\n` +
+      `---------------------------------------------\n` +
+      `*Order Reference:* ${orderId}\n` +
+      `*Patron Name:* ${shippingForm.name}\n` +
+      `*Patron Email:* ${shippingForm.email}\n` +
+      `*Contact Number:* ${shippingForm.phone}\n` +
+      `*Payment Method:* ${methodText}\n` +
+      `*Payment Reference:* ${refWord}\n` +
+      `*Delivery Location Area:* ${shippingForm.address}, ${shippingForm.city}, ${shippingForm.country}\n` +
+      `---------------------------------------------\n` +
+      `*ITEMS:* \n` +
+      cart.map(item => `• ${item.quantity}x ${item.product.name} (Size: ${item.selectedSize}, Color: ${item.selectedColor.name})`).join("\n") +
+      `\n---------------------------------------------\n` +
+      `*TOTAL VALUE:* ₦${vaultTotal.toLocaleString()}\n` +
+      `*CACTUS BEAR SECURE PLATFORM TRACKER - LAGOS, NIGERIA*`;
+
+    const whatsappUrl = `https://wa.me/${cleanPhoneForWhatsapp}?text=${encodeURIComponent(whatsappText)}`;
+    
+    // Non-blocking popup trigger
+    setTimeout(() => {
+      window.open(whatsappUrl, "_blank");
+    }, 600);
   };
 
   const handleCompleteFlow = () => {
@@ -309,7 +402,7 @@ export default function CartDrawer({
                           {/* Pricing display */}
                           <div className="text-right">
                             <span className="font-mono text-xs font-extrabold block text-white select-all">
-                              ${product.price}
+                              ₦{product.price.toLocaleString()}
                             </span>
                             <span className="text-[9px] font-mono text-[#EFFF00] uppercase">
                               {product.category}
@@ -417,10 +510,10 @@ export default function CartDrawer({
                             {/* Aggregation pricing display */}
                             <div className="text-right">
                               <span className="font-mono text-xs font-extrabold block text-white select-all">
-                                ${item.product.price * item.quantity}
+                                ₦{(item.product.price * item.quantity).toLocaleString()}
                               </span>
                               <span className="text-[9px] font-mono text-zinc-500">
-                                @ ${item.product.price}
+                                @ ₦{item.product.price.toLocaleString()}
                               </span>
                             </div>
                           </div>
@@ -569,6 +662,61 @@ export default function CartDrawer({
                         />
                       </div>
 
+                      {/* Payment gateway selection */}
+                      <div className="flex flex-col gap-2 mt-4 border border-zinc-900 bg-black/40 p-4">
+                        <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest block font-black">
+                          💳 CHOOSE PAYMENT OUTLET
+                        </span>
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          {/* Paystack Outlet */}
+                          <div
+                            onClick={() => setPaymentMethod("paystack")}
+                            className={`border p-3 flex flex-col gap-1 cursor-pointer transition-all ${
+                              paymentMethod === "paystack"
+                                ? "border-[#EFFF00] bg-[#eedd00]/5 text-[#EFFF00]"
+                                : "border-zinc-900 bg-zinc-950 text-zinc-500 hover:border-zinc-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 justify-between">
+                              <span className="font-mono text-[10px] font-black tracking-wider uppercase">PAYSTACK</span>
+                              <CreditCard size={12} className={paymentMethod === "paystack" ? "text-[#EFFF00]" : "text-zinc-650"} />
+                            </div>
+                            <span className="text-[8px] leading-relaxed uppercase opacity-80 block">
+                              Cards, Bank Transfer, USSD (Real-time Instant)
+                            </span>
+                          </div>
+
+                          {/* Bank Transfer Outlet */}
+                          <div
+                            onClick={() => setPaymentMethod("transfer")}
+                            className={`border p-3 flex flex-col gap-1 cursor-pointer transition-all ${
+                              paymentMethod === "transfer"
+                                ? "border-[#EFFF00] bg-[#eedd00]/5 text-[#EFFF00]"
+                                : "border-zinc-900 bg-zinc-950 text-zinc-500 hover:border-zinc-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 justify-between">
+                              <span className="font-mono text-[10px] font-black tracking-wider uppercase">BANK TRANSFER</span>
+                              <Smartphone size={12} className={paymentMethod === "transfer" ? "text-[#EFFF00]" : "text-zinc-650"} />
+                            </div>
+                            <span className="text-[8px] leading-relaxed uppercase opacity-80 block">
+                              Direct manual transfer to Sterling Bank Escrow
+                            </span>
+                          </div>
+                        </div>
+
+                        {paymentMethod === "transfer" && (
+                          <div className="border border-zinc-900 bg-zinc-950/80 p-3 mt-1 text-[9.5px] font-mono text-zinc-400 flex flex-col gap-1">
+                            <span className="text-[#EFFF00] font-black uppercase text-[8.5px]">✦ CACTUS BEAR ESCROW DETAILS ✦</span>
+                            <div>• BANK: <strong className="text-white font-bold">Sterling Bank PLC</strong></div>
+                            <div>• ACCOUNT: <strong className="text-white font-bold">1024558291</strong></div>
+                            <div>• NAME: <strong className="text-white font-bold">Cactus Bear Apparel LTD</strong></div>
+                            <div>• INSTRUCTION: Pay <strong className="text-white font-bold">₦{vaultTotal.toLocaleString()}</strong> exactly, then send payment receipt.</div>
+                          </div>
+                        )}
+                      </div>
+
                       <button
                         type="submit"
                         disabled={submitting}
@@ -577,10 +725,12 @@ export default function CartDrawer({
                         {submitting ? (
                           <>
                             <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                            PROCESSING PRE-ORDER...
+                            PROCESSING TRANSACTION...
                           </>
+                        ) : paymentMethod === "paystack" ? (
+                          "SECURE CHECKOUT VIA PAYSTACK // CARD & BANK"
                         ) : (
-                          "PLACE FREE PRE-ORDER RESERVATION"
+                          "REGISTER TRANSFER & CONTINUE"
                         )}
                       </button>
 
@@ -594,7 +744,7 @@ export default function CartDrawer({
                     </form>
                   )}
 
-                  {/* Step THREE: Confirmation - COMING SOON Announcement */}
+                  {/* Step THREE: Confirmation - Dynamic payment confirmation */}
                   {checkoutStep === "confirm" && (
                     <motion.div
                       initial={{ scale: 0.96, opacity: 0 }}
@@ -607,13 +757,17 @@ export default function CartDrawer({
 
                       <div>
                         <span className="text-[#EFFF00] font-mono text-[11px] tracking-widest font-black uppercase block mb-1">
-                          THANK YOU
+                          {paymentMethod === "paystack" ? "PAYMENT SECURED" : "PRE-ORDER RECEIVED"}
                         </span>
                         <h3 className="text-xl font-sans font-black uppercase tracking-tight text-white">
-                          PRE-ORDER SAVED
+                          {paymentMethod === "paystack" ? "TRANSACTION VERIFIED" : "PENDING ESCROW VERIFICATION"}
                         </h3>
                         <p className="text-zinc-400 text-xs mt-3 leading-relaxed font-sans px-2">
-                          We have received your pre-order reservation! Since this is a preview collection, actual payment checkout will open once the items officially drop. We will email you with early access instructions the second they become available.
+                          {paymentMethod === "paystack" ? (
+                            `We have successfully processed your secure payment of ₦${vaultTotal.toLocaleString()} NGN via Paystack! Our Lagos workshop has received your design directives and will begin expedited tailoring immediately.`
+                          ) : (
+                            `Your order has been registered! To verify your reservation, please transfer ₦${vaultTotal.toLocaleString()} NGN to Sterling Bank PLC, Account: 1024558291 (Cactus Bear Apparel LTD). Click the WhatsApp button below to upload your payment receipt.`
+                          )}
                         </p>
                       </div>
 
@@ -630,19 +784,35 @@ export default function CartDrawer({
                         <div>
                           <span className="text-zinc-600 uppercase font-black">DELIVERY AREA:</span> {shippingForm.address}, {shippingForm.city}, {shippingForm.country}
                         </div>
+                        <div>
+                          <span className="text-zinc-600 uppercase font-black font-mono">PAYMENT STATUS:</span>{" "}
+                          <span className={paymentMethod === "paystack" ? "text-[#EFFF00] font-bold font-mono" : "text-amber-500 font-extrabold font-mono"}>
+                            {paymentMethod === "paystack" ? "PAID // VERIFIED" : "PENDING Sterling Bank Escrow"}
+                          </span>
+                        </div>
+                        {paymentRef && (
+                          <div>
+                            <span className="text-zinc-600 uppercase font-black font-mono">GATEWAY REF:</span>{" "}
+                            <span className="text-white select-all font-bold font-mono">{paymentRef}</span>
+                          </div>
+                        )}
                         <div className="border-t border-zinc-900 pt-2 mt-2 flex justify-between">
                           <span className="text-[#EFFF00]">RESERVATION CODE:</span>
-                          <strong className="text-white select-all">{orderHash}</strong>
+                          <strong className="text-white select-all font-mono font-bold">{orderHash}</strong>
                         </div>
                       </div>
 
                       {/* WhatsApp / Email alerts dispatcher block */}
                       <div className="bg-[#121207]/40 border border-[#EFFF00]/20 p-4 text-left flex flex-col gap-2.5">
                         <span className="font-mono text-[9px] text-[#EFFF00] uppercase tracking-widest font-black block">
-                          ⚡ IMMEDIATE NOTIFICATION PING
+                          {paymentMethod === "paystack" ? "⚡ EXPEDITE TAILORING DIRECTIVE" : "🇳🇬 SUBMIT TRANSACTION RECEIPT"}
                         </span>
                         <p className="text-zinc-400 text-[10.5px] leading-relaxed font-sans">
-                          Alert our atelier directly to expedite customized assembly and prompt shipping preparations:
+                          {paymentMethod === "paystack" ? (
+                            "Ping our atelier support desk to prioritize your shipment dispatch and retrieve tracking updates:"
+                          ) : (
+                            "Send our accounts team your transfer screenshot now on WhatsApp or Email for instant confirmation & expedited tracking:"
+                          )}
                         </p>
                         <div className="grid grid-cols-2 gap-2 mt-1 font-mono text-[10px]">
                           <a
@@ -658,7 +828,7 @@ export default function CartDrawer({
                               `*ITEMS:* \n` +
                               cart.map(item => `• ${item.quantity}x ${item.product.name} (Size: ${item.selectedSize}, Color: ${item.selectedColor.name})`).join("\n") +
                               `\n---------------------------------------------\n` +
-                              `*TOTAL VALUE:* $${vaultTotal}.00 (approx. ₦${(vaultTotal * 1500).toLocaleString()})\n` +
+                              `*TOTAL VALUE:* ₦${vaultTotal.toLocaleString()}\n` +
                               `*CACTUS BEAR SECURE PLATFORM TRACKER - LAGOS, NIGERIA*`
                             )}`}
                             target="_blank"
@@ -685,7 +855,7 @@ export default function CartDrawer({
                               `ITEMS: \n` +
                               cart.map(item => `• ${item.quantity}x ${item.product.name} (Size: ${item.selectedSize}, Color: ${item.selectedColor.name})`).join("\n") +
                               `\n---------------------------------------------\n` +
-                              `TOTAL VALUE: $${vaultTotal}.00 (approx. ₦${(vaultTotal * 1500).toLocaleString()})\n` +
+                              `TOTAL VALUE: ₦${vaultTotal.toLocaleString()}\n` +
                               `CACTUS BEAR SECURE PLATFORM TRACKER - LAGOS, NIGERIA`
                             )}`}
                             className="bg-white hover:bg-[#EFFF00] text-black font-extrabold py-3.5 tracking-wider uppercase text-center flex items-center justify-center gap-1.5 transition-all text-[11px]"
@@ -701,10 +871,14 @@ export default function CartDrawer({
 
                       <div className="border border-zinc-900 bg-zinc-950 p-3 mt-1">
                         <span className="font-mono text-[9px] text-[#EFFF00] tracking-wide block uppercase">
-                          No payment needed now
+                          {paymentMethod === "paystack" ? "Checkout verified" : "Escrow Pending"}
                         </span>
-                        <p className="text-zinc-500 text-[9px] uppercase font-mono mt-1">
-                          No charges have been made. You will receive a link to checkout once the collection officially launches.
+                        <p className="text-zinc-500 text-[9px] uppercase font-mono mt-1 leading-relaxed">
+                          {paymentMethod === "paystack" ? (
+                            "Your payment was safely processed using Paystack online processing layers. Thank you for your support."
+                          ) : (
+                            "Please complete bank transfer instantly to secure reservation slot for this collection drop."
+                          )}
                         </p>
                       </div>
 
@@ -726,21 +900,20 @@ export default function CartDrawer({
                 <div className="flex flex-col gap-2 font-mono text-xs">
                   <div className="flex justify-between text-zinc-500">
                     <span>SUB-TOTAL:</span>
-                    <span className="text-white">
-                      ${cartSubtotal}.00 <span className="text-[10px] text-zinc-500 font-normal">(₦{(cartSubtotal * 1500).toLocaleString()})</span>
+                    <span className="text-white text-right">
+                      ₦{cartSubtotal.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-zinc-500">
                     <span>STANDARD SHIPPING:</span>
-                    <span className="text-[#EFFF00] font-bold">
-                      {coreShippingFee === 0 ? "FREE" : `$${coreShippingFee}.00`}
-                      {coreShippingFee > 0 && <span className="text-[10px] text-zinc-500 font-normal ml-1">(₦{(coreShippingFee * 1500).toLocaleString()})</span>}
+                    <span className="text-[#EFFF00] font-bold text-right">
+                      {coreShippingFee === 0 ? "FREE" : `₦${coreShippingFee.toLocaleString()}`}
                     </span>
                   </div>
                   <div className="border-t border-zinc-950 pt-3 flex justify-between items-center text-sm font-semibold">
                     <span className="font-sans font-black tracking-wide text-white">TOTAL VALUE:</span>
-                    <span className="text-xl font-extrabold text-[#EFFF00] select-all">
-                      ${vaultTotal}.00 <span className="text-xs text-zinc-400 font-normal block md:inline md:ml-1.5 mt-0.5">(₦{(vaultTotal * 1500).toLocaleString()})</span>
+                    <span className="text-xl font-extrabold text-[#EFFF00] select-all text-right">
+                      ₦{vaultTotal.toLocaleString()}
                     </span>
                   </div>
                 </div>

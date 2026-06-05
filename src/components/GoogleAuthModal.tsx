@@ -45,33 +45,52 @@ export default function GoogleAuthModal({
       errorText.toLowerCase().includes("popup");
 
     if (isUnauthorizedDomain || isPopupIssue) {
-      const currentHost = typeof window !== "undefined" ? window.location.hostname : "ais-dev-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app";
+      const currentHost = typeof window !== "undefined" ? window.location.hostname : "cactusbear.store";
       return (
         <div className="border border-[#EFFF00]/30 bg-amber-950/10 p-4 font-mono text-[10px] leading-relaxed text-zinc-350 mt-3 border-l-2 border-l-[#EFFF00]">
           <span className="text-[#EFFF00] font-bold block uppercase mb-1.5 tracking-wider">
-            {isUnauthorizedDomain ? "⚠ FIREBASE AUTH: UNAUTHORIZED DOMAIN" : "⚠ BROWSER POPUP BLOCKED / CLOSED"}
+            {isUnauthorizedDomain ? "⚠ FIREBASE AUTH: UNAUTHORIZED DOMAINED" : "⚠ BROWSER POPUP RESTRICTED"}
           </span>
-          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-2">
+          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-3">
             {isUnauthorizedDomain 
-              ? "Firebase Authentication requires registering this staging domain in your Firebase project configuration."
-              : "Popups are often blocked, cancelled, or restricted by browsers inside the developer preview sandbox iframe."}
+              ? "Firebase Authentication restricts OAuth login callbacks to registered domains only. You must authorize your new domains inside the Firebase Dashboard."
+              : "Popups might be blocked, cancelled, or confined inside sandbox iframes. We recommend using our Live Gateway Bypass below for testing."}
           </p>
           
           {isUnauthorizedDomain && (
-            <>
-              <span className="block font-bold text-white uppercase mb-1 tracking-wider font-mono text-[9px]">
-                QUICK SOLUTION:
+            <div className="flex flex-col gap-2.5 mb-3 bg-zinc-950/80 p-3 border border-zinc-900">
+              <span className="block font-bold text-white uppercase tracking-wider font-mono text-[9px]">
+                ✦ HOW TO REGISTER YOUR CUSTOM DOMAIN ✦
               </span>
-              <ol className="list-decimal list-inside space-y-1 text-zinc-400 mb-3 ml-1">
-                <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a></li>
-                <li>Navigate to <strong className="text-white">Auth → Settings → Authorized Domains</strong></li>
-                <li>Add these staging preview URLs:</li>
+              <ol className="list-decimal list-inside space-y-1.5 text-zinc-400 text-[9px] ml-0.5">
+                <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console Dashboard</a></li>
+                <li>Navigate to <strong className="text-white font-semibold">Build &gt; Authentication &gt; Settings &gt; Authorized Domains</strong></li>
+                <li>Click <strong className="text-white">+ Add Domain</strong> and register the following:</li>
               </ol>
-              <div className="bg-black border border-zinc-900 p-2 font-mono text-[9px] text-[#EFFF00] break-all flex flex-col gap-1 mb-3">
-                <code>{currentHost}</code>
-                <code>ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app</code>
+              <div className="bg-black border border-zinc-900 p-2.5 font-mono text-[8.5px] text-[#EFFF00] break-all flex flex-col gap-1.5 tracking-wide mt-1">
+                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
+                  <code>cactusbear.store</code>
+                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">CUSTOM DOMAIN</span>
+                </div>
+                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
+                  <code>www.cactusbear.store</code>
+                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">SUBDOMAIN</span>
+                </div>
+                {currentHost !== "cactusbear.store" && currentHost !== "www.cactusbear.store" && (
+                  <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
+                    <code>{currentHost}</code>
+                    <span className="text-[7.5px] text-zinc-650 font-bold uppercase">STAGING Sandbox</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
+                  <code>ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app</code>
+                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">SHARED Sandbox</span>
+                </div>
               </div>
-            </>
+              <p className="text-zinc-500 text-[8px] leading-normal uppercase">
+                * Note: If you use Google Authenticating (OAuth), make sure to add these to your Google Cloud Console OAuth Authorized Redirect URIs too!
+              </p>
+            </div>
           )}
 
           <div className="border-t border-zinc-900 pt-3 flex flex-col gap-2.5">

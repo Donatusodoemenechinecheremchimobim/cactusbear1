@@ -159,7 +159,9 @@ export default function ProductDetailPage({
         <div className="lg:col-span-7 flex flex-col gap-6 w-full">
           
           {/* Main Visual showcase board */}
-          <div className="bg-[#050505] border border-zinc-900 p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden group min-h-[350px] sm:min-h-[460px] md:min-h-[520px]">
+          <div className={`bg-[#050505] border border-zinc-900 flex flex-col items-center justify-center relative overflow-hidden group min-h-[350px] sm:min-h-[460px] md:min-h-[520px] ${
+            (selectedColor.imageUrl || product.imageUrl) ? "p-0" : "p-6 md:p-12"
+          }`}>
             
             {/* Soft Ambient Radial color aura behind garment representation */}
             <div 
@@ -181,7 +183,11 @@ export default function ProductDetailPage({
 
             {/* Visual presentation stage */}
             <div 
-              className="relative z-10 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 overflow-hidden cursor-crosshair flex items-center justify-center"
+              className={`relative z-10 overflow-hidden cursor-crosshair flex items-center justify-center ${
+                (selectedColor.imageUrl || product.imageUrl)
+                  ? "absolute inset-0 w-full h-full"
+                  : "w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80"
+              }`}
               onMouseMove={handleMouseMove}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => {
@@ -291,7 +297,7 @@ export default function ProductDetailPage({
               
               <div className="flex items-center gap-3 mt-4">
                 <span className="font-mono text-xl sm:text-2xl font-black text-white bg-[#1a1a08] border border-[#EFFF00]/20 px-3 py-1">
-                  ${product.price}
+                  ₦{product.price.toLocaleString()}
                 </span>
                 {product.stock !== undefined && product.stock <= 5 ? (
                   <span className="font-mono text-[9px] text-[#ff4b4b] uppercase tracking-widest border border-red-550/30 px-2.5 py-1 bg-black flex items-center gap-1.5 animate-pulse font-black">
@@ -401,7 +407,7 @@ export default function ProductDetailPage({
                   ) : (
                     <>
                       <ShoppingBag size={15} />
-                      ADD TO CART — ${(product.price).toFixed(2)}
+                      ADD TO CART — ₦{(product.price).toLocaleString()}
                     </>
                   )}
                 </button>
@@ -652,7 +658,7 @@ export default function ProductDetailPage({
                   <h4 className="font-sans font-bold text-xs uppercase text-zinc-100 group-hover:text-[#EFFF00] transition-colors">{p.name}</h4>
                   <span className="font-mono text-[9px] text-zinc-500 uppercase mt-1 block">{p.category}</span>
                 </div>
-                <span className="font-mono text-xs font-black text-white bg-zinc-950 border border-zinc-900 px-1.5 py-0.5">${p.price}</span>
+                <span className="font-mono text-xs font-black text-white bg-zinc-950 border border-zinc-900 px-1.5 py-0.5">₦{p.price.toLocaleString()}</span>
               </div>
             </div>
           ))}

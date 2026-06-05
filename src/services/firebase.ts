@@ -40,6 +40,9 @@ export interface DbOrder {
   status: "Pending" | "Shipped" | "Delivered" | "Canceled";
   createdAt: string;
   userId?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentReference?: string;
 }
 
 // Type definitions for Db Upcoming Drop Timer Config
@@ -264,7 +267,12 @@ const getInitialProducts = (): Product[] => {
   const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved) as Product[];
+      if (parsed.some((p) => p.price < 1000)) {
+        localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(CACTUS_BEAR_PRODUCTS));
+        return CACTUS_BEAR_PRODUCTS;
+      }
+      return parsed;
     } catch {
       return CACTUS_BEAR_PRODUCTS;
     }
@@ -372,15 +380,17 @@ class DatabaseService {
             list.push(item);
           }
         } else {
-          // Proactively sync and update defaults if Firestore records are missing colorway images
+          // Proactively sync and update defaults if Firestore records are missing colorway images or have obsolete default USD prices
           for (const item of CACTUS_BEAR_PRODUCTS) {
             const existing = list.find((p) => p.id === item.id);
             if (existing) {
               const needsUpdate = item.colors.some(
                 (c) => c.imageUrl && !existing.colors.some((ec) => ec.name === c.name && ec.imageUrl)
               );
-              if (needsUpdate) {
-                console.log(`Updating Firestore product ${item.id} with colorway image assets...`);
+              const needsPriceMigrate = existing.price < 1000 && item.price >= 1000;
+              
+              if (needsUpdate || needsPriceMigrate) {
+                console.log(`Updating Firestore product ${item.id} (needsUpdate: ${needsUpdate}, needsPriceMigrate: ${needsPriceMigrate})...`);
                 await setDoc(doc(db, "products", item.id), item);
                 const idx = list.findIndex((p) => p.id === item.id);
                 if (idx !== -1) {
@@ -579,17 +589,19 @@ class DatabaseService {
         const color = it.selectedColor?.name || "N/A";
         const qty = it.quantity || 1;
         const price = it.product?.price || 0;
-        const total = price * qty;
+        const actualPrice = price < 1000 ? price * 1500 : price;
+        const total = actualPrice * qty;
         const cPosition = it.customPrintPosition ? ` (Custom Design: ${it.customPrintPosition})` : "";
         return `[Item ${i + 1}] ${pName}${cPosition}\n` +
                `   • SKU/ID: ${sku}\n` +
                `   • Size: ${size}\n` +
                `   • Color: ${color}\n` +
                `   • Quantity: ${qty}\n` +
-               `   • Unit Price: $${price} USD\n` +
-               `   • Total for Item: $${total} USD`;
+               `   • Unit Price: ₦${actualPrice.toLocaleString()} NGN\n` +
+               `   • Total for Item: ₦${total.toLocaleString()} NGN`;
       }).join("\n\n");
 
+      const actualOrderTotal = order.totalPrice < 1000 ? order.totalPrice * 1500 : order.totalPrice;
       const formattedMessage = 
         `✦ NEW PRE-ORDER DIGEST: ${order.id} ✦\n\n` +
         `• Customer Email: ${order.email}\n` +
@@ -599,8 +611,7 @@ class DatabaseService {
         `  ${order.address || "N/A"}\n` +
         `  City: ${order.city || "N/A"}\n` +
         `  Country: ${order.country || "N/A"}\n\n` +
-        `• Total Value NGN (₦1,500/$1 Conversion): ₦${(order.totalPrice * 1500).toLocaleString()}\n` +
-        `• Total Value USD: $${order.totalPrice} USD\n\n` +
+        `• Total Value: ₦${actualOrderTotal.toLocaleString()} NGN\n\n` +
         `• Items Breakdown:\n\n${detailedItemsList}\n\n` +
         `✦ END OF CACTUS BEAR RECORD TRANSACTIONS ✦`;
 
@@ -796,7 +807,8 @@ class DatabaseService {
           statusText: "Posting Alert"
         };
 
-        const slackText = `✦ *NEW PRE-ORDER DISPATCHED:* ${order.id} ✦\n• *Client:* ${order.email}\n• *Total:* ₦${(order.totalPrice * 1500).toLocaleString()} ($${order.totalPrice} USD)\n• *Items:* ${order.items.map((it: any) => `${it.product?.name || "Premium Item"} (${it.selectedSize || "N/A"})`).join(", ")}`;
+        const actualLogTotal = order.totalPrice < 1000 ? order.totalPrice * 1500 : order.totalPrice;
+        const slackText = `✦ *NEW PRE-ORDER DISPATCHED:* ${order.id} ✦\n• *Client:* ${order.email}\n• *Total:* ₦${actualLogTotal.toLocaleString()} NGN\n• *Items:* ${order.items.map((it: any) => `${it.product?.name || "Premium Item"} (${it.selectedSize || "N/A"})`).join(", ")}`;
 
         fetch(slackUrl, {
           method: "POST",
@@ -843,7 +855,7 @@ class DatabaseService {
             color: 15728384, // #EFFF00
             fields: [
               { name: "Patron Email", value: order.email, inline: true },
-              { name: "Order Value (₦ / $)", value: `₦${(order.totalPrice * 1500).toLocaleString()} / $${order.totalPrice} USD`, inline: true },
+              { name: "Order Value (NGN)", value: `₦${(order.totalPrice < 1000 ? order.totalPrice * 1500 : order.totalPrice).toLocaleString()} NGN`, inline: true },
               { name: "Fulfillment Location", value: `${order.address || "N/A"}, ${order.city || "N/A"} (${order.country || "N/A"})` }
             ],
             timestamp: new Date().toISOString()

@@ -66,8 +66,9 @@ export default function OrderHistoryModal({
     }
   };
 
-  const formatNgn = (usdAmount: number) => {
-    return `₦${(usdAmount * 1500).toLocaleString()}`;
+  const formatNgn = (nairaOrUsdAmount: number) => {
+    const actualPrice = nairaOrUsdAmount < 1000 ? nairaOrUsdAmount * 1500 : nairaOrUsdAmount;
+    return `₦${actualPrice.toLocaleString()}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -356,7 +357,7 @@ export default function OrderHistoryModal({
                           {formatNgn(selectedOrder.totalPrice)}
                         </span>
                         <span className="text-zinc-550 font-mono text-[8px] block uppercase">
-                          TOTAL CONVERTED RATE • ${selectedOrder.totalPrice} USD
+                          TRANSACTION VALUE • REGISTERED NGN
                         </span>
                       </div>
                     </div>

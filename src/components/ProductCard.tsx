@@ -445,7 +445,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
             {product.name}
           </h3>
           <span className="font-mono text-xs font-black text-white bg-[#1a1a08] border border-[#EFFF00]/15 px-1.5 py-0.5">
-            ${product.price}
+            ₦{product.price.toLocaleString()}
           </span>
         </div>
 
@@ -623,7 +623,7 @@ export default function ProductCard({ product, onAddToCart, onSelect, isWishlist
               ) : added ? (
                 "ADDED!"
               ) : (
-                `ADD TO BAG — $${product.price}`
+                `ADD TO BAG — ₦${product.price.toLocaleString()}`
               )}
             </button>
           </motion.div>
