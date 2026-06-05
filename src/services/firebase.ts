@@ -21,7 +21,9 @@ import {
   signOut as firebaseSignOut, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+  createUserWithEmailAndPassword,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
 } from "firebase/auth";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import firebaseConfig from "../../firebase-applet-config.json";
@@ -656,7 +658,7 @@ class DatabaseService {
       // 2. Direct Email Alert (Default Destination & Custom Formspree / Email Hook)
       const emailEnabled = localStorage.getItem("cactus_bear_autom_email_enabled") !== "false"; // Default to enabled
       const emailTarget = localStorage.getItem("cactus_bear_autom_email_target") || "chibundusadiq@gmail.com";
-      const emailFormspreeKey = localStorage.getItem("cactus_bear_autom_email_key") || "xojzazgo"; // Custom Formspree Form ID
+      const emailFormspreeKey = localStorage.getItem("cactus_bear_autom_email_key") || "xqeoaypr"; // Custom Formspree Form ID
       
       if (emailEnabled && emailTarget) {
         const logEntry = {
@@ -1335,6 +1337,85 @@ class AuthService {
     const sim = this.signInWithEmailSimulate(cleanEmail, passwordInput);
     this.notifyListeners(sim);
     return sim;
+  }
+
+  // Phone Authentication: Send Verification Code (OTP)
+  public async sendPhoneVerificationCode(phoneNumber: string, recaptchaContainerId: string): Promise<any> {
+    if (isFirebaseConfigured && auth) {
+      try {
+        // Prepare or retrieve Recaptcha Verifier
+        let recaptchaVerifier = (window as any).recaptchaVerifier;
+        if (!recaptchaVerifier) {
+          recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+            size: "invisible",
+            callback: () => {
+              // reCAPTCHA solved
+            }
+          });
+          (window as any).recaptchaVerifier = recaptchaVerifier;
+        }
+
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        return confirmationResult;
+      } catch (error) {
+        console.error("Firebase sendPhoneVerificationCode error:", error);
+        throw error;
+      }
+    }
+
+    // High fidelity simulation
+    console.log(`[Phone Auth Simulation] OTP code dispatched to: ${phoneNumber}`);
+    return {
+      simulated: true,
+      phoneNumber,
+      verificationId: `sim-verify-${Date.now()}`
+    };
+  }
+
+  // Phone Authentication: Verify OTP & Sign In
+  public async confirmPhoneCode(confirmationResult: any, otpCode: string): Promise<UserSession> {
+    if (isFirebaseConfigured && auth && confirmationResult && !confirmationResult.simulated) {
+      try {
+        const result = await confirmationResult.confirm(otpCode);
+        const fbUser = result.user;
+        const phoneLabel = fbUser.phoneNumber || confirmationResult.phoneNumber || "Phone Patron";
+        
+        // Use part of the phone as display/email-fallback or standard template
+        const cleanRef = phoneLabel.replace("+", "");
+        const userSession: UserSession = {
+          uid: fbUser.uid,
+          email: `${cleanRef}@cactusbear-phone.club`,
+          displayName: `Patron (${phoneLabel})`,
+          photoURL: fbUser.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${fbUser.uid}`,
+          isAdmin: false
+        };
+
+        this.currentSession = userSession;
+        localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+        await this.syncUserProfile(userSession);
+        this.notifyListeners(userSession);
+        return userSession;
+      } catch (error) {
+        console.error("Firebase confirmPhoneCode error:", error);
+        throw error;
+      }
+    }
+
+    // Simulated confirmation
+    const phoneLabel = confirmationResult?.phoneNumber || "+2348000000000";
+    const cleanRef = phoneLabel.replace("+", "");
+    const userSession: UserSession = {
+      uid: "phone-uid-" + Math.floor(10000 + Math.random() * 90000),
+      email: `${cleanRef}@cactusbear-phone.club`,
+      displayName: `Patron (${phoneLabel})`,
+      photoURL: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${cleanRef}`,
+      isAdmin: false
+    };
+
+    this.currentSession = userSession;
+    localStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(userSession));
+    this.notifyListeners(userSession);
+    return userSession;
   }
 
   // Mock Email & Password login select

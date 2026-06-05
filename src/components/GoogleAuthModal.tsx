@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Lock, Mail, ArrowRight, ShieldCheck, User, Eye, EyeOff, Globe } from "lucide-react";
+import { X, Lock, Mail, ArrowRight, ShieldCheck, User, Eye, EyeOff, Globe, Phone } from "lucide-react";
 import { authService, UserSession, isFirebaseConfigured } from "../services/firebase";
 
 interface GoogleAuthModalProps {
@@ -14,7 +14,7 @@ export default function GoogleAuthModal({
   onClose,
   onLoginSuccess
 }: GoogleAuthModalProps) {
-  const [activeTab, setActiveTab] = useState<"social" | "email" | "guest">("social");
+  const [activeTab, setActiveTab] = useState<"social" | "email" | "phone" | "guest">("social");
   
   // Custom simulation input toggle
   const [showSimulateInput, setShowSimulateInput] = useState<boolean>(false);
@@ -25,6 +25,12 @@ export default function GoogleAuthModal({
   const [emailInput, setEmailInput] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  // Input fields for phone auth tab
+  const [phoneInput, setPhoneInput] = useState<string>("");
+  const [otpCodeInput, setOtpCodeInput] = useState<string>("");
+  const [phoneOtpSent, setPhoneOtpSent] = useState<boolean>(false);
+  const [phoneConfirmationObj, setPhoneConfirmationObj] = useState<any>(null);
   
   // Status states
   const [authenticating, setAuthenticating] = useState<boolean>(false);
@@ -273,8 +279,9 @@ export default function GoogleAuthModal({
               </div>
 
               {/* Selector Tabs built with standard simple look */}
-              <div className="grid grid-cols-3 gap-1 p-1 bg-black border border-zinc-900 mb-6 font-mono text-[10px] tracking-wider text-center">
+              <div className="grid grid-cols-4 gap-1 p-1 bg-black border border-zinc-900 mb-6 font-mono text-[9px] tracking-tight text-center">
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveTab("social");
                     setErrorText("");
@@ -283,9 +290,10 @@ export default function GoogleAuthModal({
                     activeTab === "social" ? "bg-[#EFFF00] text-black" : "text-zinc-500 hover:text-white"
                   }`}
                 >
-                  SOCIAL PROVIDER
+                  SOCIALS
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveTab("email");
                     setErrorText("");
@@ -297,6 +305,19 @@ export default function GoogleAuthModal({
                   EMAIL PASS
                 </button>
                 <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("phone");
+                    setErrorText("");
+                  }}
+                  className={`py-1.5 font-bold transition-all cursor-pointer ${
+                    activeTab === "phone" ? "bg-[#EFFF00] text-black" : "text-zinc-500 hover:text-white"
+                  }`}
+                >
+                  MOBILE OTP
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     setActiveTab("guest");
                     setErrorText("");
@@ -305,20 +326,22 @@ export default function GoogleAuthModal({
                     activeTab === "guest" ? "bg-[#EFFF00] text-black" : "text-zinc-500 hover:text-white"
                   }`}
                 >
-                  GUEST ACCESS
+                  GUEST VIP
                 </button>
               </div>
 
               {/* Title Section */}
               <div className="mb-6">
-                <h3 className="font-sans font-black text-2xl uppercase tracking-tight text-white mb-1">
+                <h3 className="font-sans font-black text-2.5xl uppercase tracking-tight text-white mb-1">
                   {activeTab === "social" && <>LOGIN INTO <span className="text-[#EFFF00]">CACTUS BEAR</span></>}
                   {activeTab === "email" && <>USE YOUR <span className="text-[#EFFF00]">EMAIL ADDRESS</span></>}
+                  {activeTab === "phone" && <>MOBILE <span className="text-[#EFFF00]">OTP GATEWAY</span></>}
                   {activeTab === "guest" && <>CONTINUE AS <span className="text-[#EFFF00]">GUEST PATRON</span></>}
                 </h3>
                 <p className="text-zinc-500 text-xs leading-relaxed font-sans mt-1">
                   {activeTab === "social" && "Log in securely using Google or GitHub to browse and purchase your custom streetwear."}
                   {activeTab === "email" && "Log in or register your couture workspace with an email and password."}
+                  {activeTab === "phone" && "Authenticate directly using SMS one-time passcode confirmation."}
                   {activeTab === "guest" && "Browse, preview, customize, and add products with a quick guest session."}
                 </p>
               </div>
@@ -468,6 +491,154 @@ export default function GoogleAuthModal({
                     )}
                   </button>
                 </form>
+              )}
+
+              {/* Tab 3: Phone Number OTP Login */}
+              {activeTab === "phone" && (
+                <div className="flex flex-col gap-4">
+                  {/* Container for Firebase Recaptcha */}
+                  <div id="recaptcha-container" className="hidden"></div>
+                  
+                  {!phoneOtpSent ? (
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!phoneInput.trim()) {
+                          setErrorText("Please enter a valid phone number.");
+                          return;
+                        }
+                        setAuthenticating(true);
+                        setErrorText("");
+                        try {
+                          const conf = await authService.sendPhoneVerificationCode(phoneInput.trim(), "recaptcha-container");
+                          setPhoneConfirmationObj(conf);
+                          setPhoneOtpSent(true);
+                          setAuthenticating(false);
+                        } catch (err: any) {
+                          setAuthenticating(false);
+                          setErrorText(err.message || "Failed to dispatch phone authentication SMS. Verify formatting with international prefix (e.g., +15551234567).");
+                        }
+                      }}
+                      className="flex flex-col gap-3"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <span className="font-mono text-[9px] text-zinc-500 uppercase">
+                          Mobile Phone Number (international format)
+                        </span>
+                        <div className="relative">
+                          <Phone size={12} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500" />
+                          <input
+                            required
+                            type="tel"
+                            value={phoneInput}
+                            onChange={(e) => {
+                              setPhoneInput(e.target.value);
+                              setErrorText("");
+                            }}
+                            className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] pl-10 pr-4 py-2.5 font-mono text-xs text-[#EFFF00] outline-none transition-colors"
+                            placeholder="+1 555 123 4567"
+                          />
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] text-zinc-500 font-mono italic leading-normal block mt-1">
+                        💡 **Development / Sandbox Multi-Mode**: Automatically shifts to a seamless mock mode when raw Firebase credentials are unconfigured or blocked by iframe boundaries.
+                      </span>
+
+                      {renderError()}
+
+                      <button
+                        type="submit"
+                        disabled={authenticating}
+                        className="w-full bg-white hover:bg-[#EFFF00] disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-mono font-black text-xs py-4 tracking-widest uppercase transition-colors rounded-none mt-2 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {authenticating ? (
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            DISPATCH SMS PASSCODE
+                            <ArrowRight size={13} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : (
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!otpCodeInput.trim()) {
+                          setErrorText("Please enter the 6-digit confirmation code.");
+                          return;
+                        }
+                        setAuthenticating(true);
+                        setErrorText("");
+                        try {
+                          const session = await authService.confirmPhoneCode(phoneConfirmationObj, otpCodeInput.trim());
+                          onLoginSuccess(session);
+                          setAuthenticating(false);
+                          onClose();
+                        } catch (err: any) {
+                          setAuthenticating(false);
+                          setErrorText(err.message || "Invalid OTP code entered.");
+                        }
+                      }}
+                      className="flex flex-col gap-3"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <span className="font-mono text-[9px] text-zinc-500 uppercase">
+                          6-Digit SMS Verification Code
+                        </span>
+                        <div className="relative">
+                          <Lock size={12} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500" />
+                          <input
+                            required
+                            type="text"
+                            maxLength={6}
+                            value={otpCodeInput}
+                            onChange={(e) => {
+                              setOtpCodeInput(e.target.value);
+                              setErrorText("");
+                            }}
+                            className="w-full bg-black border border-[#EFFF00]/50 focus:border-[#EFFF00] pl-10 pr-4 py-2.5 font-mono text-center text-sm font-bold tracking-[0.5em] text-[#EFFF00] outline-none transition-colors"
+                            placeholder="000000"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 mt-1">
+                        <span>OTP passcode dispatched</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoneOtpSent(false);
+                            setOtpCodeInput("");
+                            setErrorText("");
+                          }}
+                          className="text-[#EFFF00] hover:underline cursor-pointer font-bold"
+                        >
+                          Change Number
+                        </button>
+                      </div>
+
+                      {renderError()}
+
+                      <button
+                        type="submit"
+                        disabled={authenticating}
+                        className="w-full bg-white hover:bg-[#EFFF00] disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-mono font-black text-xs py-4 tracking-widest uppercase transition-colors rounded-none mt-2 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {authenticating ? (
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            VERIFY & AUTHENTICATE
+                            <ArrowRight size={13} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
               )}
 
               {/* Tab 3: Quick Guest Pass */}

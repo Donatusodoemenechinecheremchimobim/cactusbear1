@@ -56,7 +56,7 @@ export default function AdminWorkspaceModal({
   // Email Notification States
   const [emailEnabled, setEmailEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_email_enabled") !== "false");
   const [emailTarget, setEmailTarget] = useState<string>(() => localStorage.getItem("cactus_bear_autom_email_target") || "chibundusadiq@gmail.com");
-  const [emailKey, setEmailKey] = useState<string>(() => localStorage.getItem("cactus_bear_autom_email_key") || "xojzazgo");
+  const [emailKey, setEmailKey] = useState<string>(() => localStorage.getItem("cactus_bear_autom_email_key") || "xqeoaypr");
 
   // WhatsApp Notification States
   const [whatsappEnabled, setWhatsappEnabled] = useState<boolean>(() => localStorage.getItem("cactus_bear_autom_whatsapp_enabled") === "true");
@@ -248,7 +248,7 @@ export default function AdminWorkspaceModal({
 
       // Now dispatch Email if enabled
       if (emailEnabled && emailTarget) {
-        const emailEndpoint = `https://formspree.io/f/${emailKey || "xojzazgo"}`;
+        const emailEndpoint = `https://formspree.io/f/${emailKey || "xqeoaypr"}`;
         
         const emProm = fetch(emailEndpoint, {
           method: "POST",
@@ -1516,14 +1516,27 @@ export default function AdminWorkspaceModal({
                       </div>
 
                       <div className="space-y-1">
-                        <span className="block font-mono text-[8px] text-zinc-550 uppercase">FORMSPREE TEMPLATE FORM ID (OPTIONAL)</span>
+                        <span className="block font-mono text-[8px] text-zinc-550 uppercase font-bold text-[#EFFF00]">FORMSPREE FORM ID (REQUIRED FOR YOUR MAILBOX)</span>
                         <input
                           type="text"
                           value={emailKey}
                           onChange={(e) => setEmailKey(e.target.value)}
-                          placeholder="mqaeorze"
+                          placeholder="xqeoaypr"
                           className="w-full bg-black border border-zinc-900 focus:border-[#EFFF00] px-3.5 py-2 font-mono text-xs text-white uppercase tracking-wider outline-none"
                         />
+                        <div className="text-[10px] text-zinc-500 font-sans leading-normal pt-1.5 flex flex-col gap-1">
+                          <p>
+                            ⚠️ <strong className="text-white">Active Form ID Required:</strong> The default <code className="text-[#EFFF00]">xqeoaypr</code> is your active workspace key. To receive automated customer orders directly at your inbox <strong className="text-zinc-300">{emailTarget || "chibundusadiq@gmail.com"}</strong>:
+                          </p>
+                          <ol className="list-decimal list-inside text-[9.5px] text-zinc-400 pl-1 space-y-0.5">
+                            <li>Log in or register on <a href="https://formspree.io" target="_blank" rel="noopener noreferrer" className="text-[#EFFF00] underline">Formspree.io</a></li>
+                            <li>Create a standard "New Form" pointing to your target email (<code className="text-zinc-300">{emailTarget || "chibundusadiq@gmail.com"}</code>).</li>
+                            <li>Copy their provided 8-character Form ID (e.g., <code className="text-[#EFFF00]">mvongyko</code>) and paste it into this field, then click <strong className="text-zinc-300">SAVE WORKSPACE CONFIGURATION</strong>.</li>
+                          </ol>
+                          <p className="mt-0.5 text-zinc-500 italic">
+                            Once configured, order specifications are dispatched completely in the background. The customer will never be prompted to send manual email elements or face external redirects.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
