@@ -29,11 +29,6 @@ export default function GoogleAuthModal({
 }: GoogleAuthModalProps) {
   const [activeTab, setActiveTab] = useState<"social" | "email" | "phone" | "guest">("social");
   
-  // Custom simulation input toggle
-  const [showSimulateInput, setShowSimulateInput] = useState<boolean>(false);
-  const [simulateEmail, setSimulateEmail] = useState<string>("");
-  const [bypassEmail, setBypassEmail] = useState<string>("");
-
   // Input fields for email/password tab
   const [emailInput, setEmailInput] = useState<string>("");
   const [passwordInput, setPasswordInput] = useState<string>("");
@@ -54,171 +49,18 @@ export default function GoogleAuthModal({
   const renderError = () => {
     if (!errorText) return null;
 
-    const isUnauthorizedDomain =
-      errorText.toLowerCase().includes("unauthorized-domain") ||
-      errorText.toLowerCase().includes("auth/unauthorized-domain");
-
-    const isPopupIssue =
-      errorText.toLowerCase().includes("popup-closed-by-user") ||
-      errorText.toLowerCase().includes("popup-blocked") ||
-      errorText.toLowerCase().includes("cancelled") ||
-      errorText.toLowerCase().includes("canceled") ||
-      errorText.toLowerCase().includes("popup");
-
-    const isBillingIssue =
-      errorText.toLowerCase().includes("billing-not-enabled") ||
-      errorText.toLowerCase().includes("billing");
-
-    if (isBillingIssue) {
-      return (
-        <div className="border border-[#EFFF00]/30 bg-[#050505] p-4 font-mono text-[10.5px] leading-relaxed text-zinc-355 mt-3 border-l-2 border-l-[#EFFF00] animate-fadeIn">
-          <span className="text-[#EFFF00] font-bold block uppercase mb-1.5 tracking-wider">
-            ⚠ FIREBASE BILLING NOT ENABLED
-          </span>
-          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-3 font-sans">
-            Firebase requires a Google Cloud / Firebase <strong className="text-white font-semibold">Blaze Plan</strong> (Pay-As-You-Go with billing enabled) to send raw, real carrier SMS OTP messages. Without billing configuration, the Firebase platform blocks any attempts to send international SMS alerts to prevent billing fraud.
-          </p>
-          
-          <div className="flex flex-col gap-2 bg-[#020202] border border-zinc-900 p-3 mb-3">
-            <span className="font-bold text-white text-[9.5px] uppercase tracking-wider font-mono">How to bypass this instantly:</span>
-            <p className="text-[9.5px] text-zinc-500 m-0 font-sans leading-normal">
-              Keep the <strong className="text-[#EFFF00]">"Enable Dev Sandbox Bypass"</strong> option selected. This uses custom front-end simulation to skip network carrier requests. You can sign in using any custom 6-digit passcode.
-            </p>
-            <div className="mt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setUseSandboxBypass(true);
-                  setErrorText("");
-                }}
-                className="bg-[#EFFF00] hover:bg-[#EFFF44] text-black font-mono font-black text-[9px] px-3.5 py-2 tracking-wider cursor-pointer uppercase transition-all"
-              >
-                Activate Sandbox Bypass
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-[#020202] border border-zinc-900 p-3">
-            <span className="font-bold text-zinc-400 text-[9px] uppercase tracking-wider block mb-1 font-mono">To use real live client SMS later:</span>
-            <ol className="list-decimal list-inside space-y-1 text-zinc-500 text-[9.5px] ml-0.5 font-sans leading-relaxed">
-              <li>Open your workspace project inside the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a></li>
-              <li>Upgrade the plan to <strong className="text-white font-semibold">Blaze Pay-As-You-Go</strong> (comes with healthy free limits)</li>
-              <li>Alternatively, register <strong className="text-white font-semibold">Test Phone Numbers</strong> in your Authentication Users sub-panel. These test phone numbers operate free of charge and require zero billing setup!</li>
-            </ol>
-          </div>
-        </div>
-      );
-    }
-
-    if (isUnauthorizedDomain || isPopupIssue) {
-      const currentHost = typeof window !== "undefined" ? window.location.hostname : "cactusbear.store";
-      return (
-        <div className="border border-[#EFFF00]/30 bg-amber-950/10 p-4 font-mono text-[10px] leading-relaxed text-zinc-350 mt-3 border-l-2 border-l-[#EFFF00]">
-          <span className="text-[#EFFF00] font-bold block uppercase mb-1.5 tracking-wider">
-            {isUnauthorizedDomain ? "⚠ FIREBASE AUTH: UNAUTHORIZED DOMAINED" : "⚠ BROWSER POPUP RESTRICTED"}
-          </span>
-          <p className="text-zinc-400 text-[10px] leading-relaxed m-0 mb-3">
-            {isUnauthorizedDomain 
-              ? "Firebase Authentication restricts OAuth login callbacks to registered domains only. You must authorize your new domains inside the Firebase Dashboard."
-              : "Popups might be blocked, cancelled, or confined inside sandbox iframes. We recommend using our Live Gateway Bypass below for testing."}
-          </p>
-          
-          {isUnauthorizedDomain && (
-            <div className="flex flex-col gap-2.5 mb-3 bg-zinc-950/80 p-3 border border-zinc-900">
-              <span className="block font-bold text-white uppercase tracking-wider font-mono text-[9px]">
-                ✦ HOW TO REGISTER YOUR CUSTOM DOMAIN ✦
-              </span>
-              <ol className="list-decimal list-inside space-y-1.5 text-zinc-400 text-[9px] ml-0.5">
-                <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console Dashboard</a></li>
-                <li>Navigate to <strong className="text-white font-semibold">Build &gt; Authentication &gt; Settings &gt; Authorized Domains</strong></li>
-                <li>Click <strong className="text-white">+ Add Domain</strong> and register the following:</li>
-              </ol>
-              <div className="bg-black border border-zinc-900 p-2.5 font-mono text-[8.5px] text-[#EFFF00] break-all flex flex-col gap-1.5 tracking-wide mt-1">
-                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
-                  <code>cactusbear.store</code>
-                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">CUSTOM DOMAIN</span>
-                </div>
-                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
-                  <code>www.cactusbear.store</code>
-                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">SUBDOMAIN</span>
-                </div>
-                {currentHost !== "cactusbear.store" && currentHost !== "www.cactusbear.store" && (
-                  <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
-                    <code>{currentHost}</code>
-                    <span className="text-[7.5px] text-zinc-650 font-bold uppercase">STAGING Sandbox</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center bg-zinc-950 px-1.5 py-1">
-                  <code>ais-pre-idoac2ds4ux6jkzbphimca-337745108430.europe-west2.run.app</code>
-                  <span className="text-[7.5px] text-zinc-650 font-bold uppercase">SHARED Sandbox</span>
-                </div>
-              </div>
-              <p className="text-zinc-500 text-[8px] leading-normal uppercase">
-                * Note: If you use Google Authenticating (OAuth), make sure to add these to your Google Cloud Console OAuth Authorized Redirect URIs too!
-              </p>
-            </div>
-          )}
-
-          <div className="border-t border-zinc-900 pt-3 flex flex-col gap-2.5">
-            <span className="text-[9px] font-bold text-[#EFFF00] uppercase tracking-wider block">
-              ⚡ LIVE GATEWAY BYPASS (RECOMMENDED)
-            </span>
-            <p className="text-zinc-400 text-[9px] leading-relaxed m-0">
-              For a 100% reliable login without browser popup restrictions, enter your email below to connect straight to the live database using secure authentication:
-            </p>
-            <div className="flex gap-2 items-center">
-              <input
-                type="email"
-                placeholder="you@domain.com"
-                value={bypassEmail}
-                onChange={(e) => setBypassEmail(e.target.value)}
-                className="flex-1 bg-black text-[#EFFF00] border border-zinc-805 px-3 py-2 font-mono text-[10.5px] outline-none"
-              />
-              <button
-                type="button"
-                onClick={async () => {
-                  const targetEmail = bypassEmail.trim() || "chibundusadiq@gmail.com";
-                  setAuthenticating(true);
-                  setErrorText("");
-                  try {
-                    let session;
-                    if (isFirebaseConfigured) {
-                      // Login/register directly with Real Firebase Auth on live DB
-                      session = await authService.signInWithEmail(targetEmail, "staging_bypass_pass_123");
-                    } else {
-                      session = authService.signInWithGoogleSimulate(targetEmail);
-                    }
-                    onLoginSuccess(session);
-                    setAuthenticating(false);
-                    onClose();
-                  } catch (err: any) {
-                    setAuthenticating(false);
-                    setErrorText(err.message || "Failed to bypass simulation");
-                  }
-                }}
-                className="bg-[#EFFF00] hover:bg-[#EFFF44] text-black font-mono font-black text-[9px] px-3.5 py-2.5 tracking-wider uppercase rounded-none transition-colors border border-transparent cursor-pointer flex items-center justify-center gap-1 shrink-0"
-              >
-                BYPASS & LOGIN
-              </button>
-            </div>
-            <div className="flex justify-between items-center text-[8.5px] text-zinc-500 font-mono mt-0.5 animate-fadeIn">
-              <span>Defaults to: chibundusadiq@gmail.com (Admin)</span>
-              <button
-                type="button"
-                onClick={() => setBypassEmail("chibundusadiq@gmail.com")}
-                className="text-zinc-400 hover:text-white underline cursor-pointer"
-              >
-                Reset to Admin Email
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+    let displayMessage = errorText;
+    if (errorText.toLowerCase().includes("billing-not-enabled") || errorText.toLowerCase().includes("billing")) {
+      displayMessage = "SMS gateway is temporarily unavailable. Please sign in via Google, GitHub, or Email/Password.";
+    } else if (errorText.toLowerCase().includes("popup-closed-by-user") || errorText.toLowerCase().includes("popup-blocked")) {
+      displayMessage = "Sign-in popup was closed or restricted by your browser. Please allow popups or try again.";
+    } else if (errorText.toLowerCase().includes("unauthorized-domain")) {
+      displayMessage = "This domain is undergoing routine security authorization. Please try using Guest Checkout or Email sign-in.";
     }
 
     return (
-      <span className="text-red-400 font-mono text-[10px] uppercase block mt-2">
-        ⚠ {errorText}
+      <span className="text-red-400 font-mono text-[10px] uppercase block mt-2 animate-fadeIn">
+        ⚠ {displayMessage}
       </span>
     );
   };
@@ -228,12 +70,7 @@ export default function GoogleAuthModal({
     setErrorText("");
 
     try {
-      let session;
-      if (showSimulateInput && simulateEmail.trim()) {
-        session = await authService.signInWithGoogleSimulate(simulateEmail);
-      } else {
-        session = await authService.signInWithGoogle();
-      }
+      const session = await authService.signInWithGoogle();
       onLoginSuccess(session);
       setAuthenticating(false);
       onClose();
@@ -248,12 +85,7 @@ export default function GoogleAuthModal({
     setErrorText("");
 
     try {
-      let session;
-      if (showSimulateInput && simulateEmail.trim()) {
-        session = await authService.signInWithGithubSimulate(simulateEmail);
-      } else {
-        session = await authService.signInWithGithub();
-      }
+      const session = await authService.signInWithGithub();
       onLoginSuccess(session);
       setAuthenticating(false);
       onClose();
@@ -447,35 +279,6 @@ export default function GoogleAuthModal({
                     )}
                   </button>
 
-                  {/* Dev Simulate Credentials Section */}
-                  <div className="mt-4 pt-4 border-t border-zinc-950">
-                    <button
-                      type="button"
-                      onClick={() => setShowSimulateInput(!showSimulateInput)}
-                      className="text-zinc-500 hover:text-white font-mono text-[9px] uppercase tracking-wider flex items-center gap-1.5"
-                    >
-                      <span>{showSimulateInput ? "[-] HIDE SIMULATE SETTINGS" : "[+] EXPAND DEV SIMULATION CONTROLS"}</span>
-                    </button>
-
-                    {showSimulateInput && (
-                      <div className="mt-3 bg-black border border-zinc-950 p-4 flex flex-col gap-2.5 animate-fadeIn">
-                        <span className="font-mono text-[9px] text-[#EFFF00] uppercase block">
-                          SPECIFY PRESET DEMO EMAIL ID
-                        </span>
-                        <input
-                          type="email"
-                          value={simulateEmail}
-                          onChange={(e) => setSimulateEmail(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-900 pl-3 pr-3 py-2 font-mono text-xs text-[#EFFF00] outline-none"
-                          placeholder="chibundusadiq@gmail.com"
-                        />
-                        <span className="text-[9px] text-zinc-500 font-mono leading-normal">
-                          💡 Enter <strong className="text-zinc-300">chibundusadiq@gmail.com</strong> here, then click either Google or GitHub above to log in instantly as the verified Admin account!
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
                   {renderError()}
                 </div>
               )}
@@ -652,68 +455,6 @@ export default function GoogleAuthModal({
                         </span>
                       </div>
 
-                      {/* Sandbox Control Trigger */}
-                      <div className="bg-[#050505] border border-zinc-900 p-3 mt-1 flex flex-col gap-2">
-                        <label className="flex items-start gap-2.5 cursor-pointer group select-none">
-                          <input
-                            type="checkbox"
-                            checked={useSandboxBypass}
-                            onChange={(e) => {
-                              setUseSandboxBypass(e.target.checked);
-                              setErrorText("");
-                            }}
-                            className="mt-0.5 rounded-none accent-[#EFFF00] shrink-0 w-3.5 h-3.5 cursor-pointer"
-                          />
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-[9px] font-bold text-white uppercase tracking-wider group-hover:text-[#EFFF00] transition-colors">
-                              Enable Dev Sandbox Bypass {useSandboxBypass && <span className="text-[#EFFF00] font-bold">(ACTIVE)</span>}
-                            </span>
-                            <span className="text-[9px] text-zinc-500 font-mono leading-normal">
-                              Safely bypasses live Firebase SMS carriers. Use this to instantly log in from your preview frame with any 6-digit code.
-                            </span>
-                          </div>
-                        </label>
-                      </div>
-
-                      {/* Expandable Firebase Region Help Panel */}
-                      <div className="border border-zinc-900 bg-[#020202]/30 p-3">
-                        <details className="group/details">
-                          <summary className="list-none flex justify-between items-center cursor-pointer font-mono text-[8.5px] text-zinc-400 select-none hover:text-[#EFFF00]">
-                            <span className="font-bold uppercase tracking-wider flex items-center gap-1.5">
-                              ⚙ Troubleshooting: "Go and set the region stuff in Firebase"?
-                            </span>
-                            <span className="font-sans transition-transform duration-200 group-open/details:rotate-180 text-[10px]">
-                              ▼
-                            </span>
-                          </summary>
-                          
-                          <div className="mt-3 text-[10px] text-zinc-400 font-sans border-t border-zinc-900 pt-2.5 flex flex-col gap-2.5">
-                            <p className="m-0 leading-relaxed font-mono text-[8.5px] text-zinc-500 uppercase">
-                              Google / Firebase blocks international SMS by default to prevent fee abuse. Here is how to unblock your country's digits:
-                            </p>
-                            
-                            <div className="bg-[#020202] border border-zinc-900 p-2.5 flex flex-col gap-1.5 text-zinc-400 font-sans text-[9px]">
-                              <p className="m-0 leading-relaxed">
-                                <strong className="text-white">1. Go to console:</strong>{" "}
-                                Visit the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#EFFF00] underline font-bold">Firebase Console</a> and open your project.
-                              </p>
-                              <p className="m-0 leading-relaxed">
-                                <strong className="text-white">2. Open policy settings:</strong>{" "}
-                                Go to <strong className="text-white">Build &gt; Authentication</strong>, select the <strong className="text-white">Settings</strong> tab, and click on <strong className="text-white">SMS Region Policy</strong>.
-                              </p>
-                              <p className="m-0 leading-relaxed">
-                                <strong className="text-white">3. Add allowlist checks:</strong>{" "}
-                                Switch policy to <span className="text-[#EFFF00] font-mono font-bold">Allowlist-only</span>, search for your region (e.g., <strong className="text-white">Nigeria +234</strong>, <strong className="text-white">US +1</strong>), check it, and click <strong className="text-white">Save</strong>.
-                              </p>
-                            </div>
-                            
-                            <p className="m-0 leading-relaxed text-zinc-600 text-[8.5px] font-mono italic">
-                              * If your preview iframe is still hanging due to reCAPTCHA limitations inside frame boxes, make sure to keep "Dev Sandbox Bypass" checked to test your flow perfectly.
-                            </p>
-                          </div>
-                        </details>
-                      </div>
-
                       {renderError()}
 
                       <button
@@ -789,17 +530,6 @@ export default function GoogleAuthModal({
                         </button>
                       </div>
 
-                      {useSandboxBypass && (
-                        <div className="bg-[#050505] border border-zinc-900 p-3 text-center my-1 select-none">
-                          <span className="font-mono text-[9px] text-[#EFFF00] font-bold block uppercase tracking-wider">
-                            ⚡ DEVELOPMENT BYPASS ACTIVE
-                          </span>
-                          <span className="text-zinc-500 font-mono text-[9px] block mt-1 leading-normal">
-                            Using local simulation to avoid network delays. Enter any 6 digits (e.g., <strong className="text-zinc-300">123456</strong>) and click Verify!
-                          </span>
-                        </div>
-                      )}
-
                       {renderError()}
 
                       <button
@@ -827,10 +557,10 @@ export default function GoogleAuthModal({
                   <div className="border border-dashed border-zinc-850 p-6 text-center bg-black/30">
                     <User size={30} className="mx-auto text-zinc-600 mb-2" />
                     <p className="font-mono text-[10px] text-[#EFFF00] uppercase tracking-widest font-black">
-                      IN-DEMO VIP BYPASS
+                      GUEST CHECKOUT
                     </p>
                     <p className="text-zinc-400 text-[11px] font-sans mt-2 max-w-xs mx-auto leading-normal">
-                      Instant anonymous pass to checkout, test pre-orders, and browse our drop collections without setting credentials.
+                      Instant anonymous session to customize, place pre-orders, and browse our exclusive collections.
                     </p>
                   </div>
 

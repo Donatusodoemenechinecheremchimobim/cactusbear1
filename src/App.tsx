@@ -87,11 +87,19 @@ export default function App() {
   const [productsList, setProductsList] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState<boolean>(true);
 
+  const getCartStorageKey = (uid: string | null) => {
+    return uid ? `cactus_bear_cart_${uid}` : "cactus_bear_cart_guest";
+  };
+  
+  const getWishlistStorageKey = (uid: string | null) => {
+    return uid ? `cactus_bear_wishlist_${uid}` : "cactus_bear_wishlist_guest";
+  };
+
   const handleToggleWishlist = (productId: string) => {
     setWishlist((prev) => {
       const isAlready = prev.includes(productId);
       const updated = isAlready ? prev.filter((id) => id !== productId) : [...prev, productId];
-      localStorage.setItem("cactus_bear_wishlist", JSON.stringify(updated));
+      localStorage.setItem(getWishlistStorageKey(currentUser?.uid || null), JSON.stringify(updated));
       
       const prod = productsList.find((p) => p.id === productId);
       const prodName = prod ? prod.name : "ITEM";
@@ -162,6 +170,9 @@ export default function App() {
     const unsubscribeAuth = authService.subscribe(async (session) => {
       setCurrentUser(session);
       if (session) {
+        const userCartKey = `cactus_bear_cart_${session.uid}`;
+        const userWishlistKey = `cactus_bear_wishlist_${session.uid}`;
+
         // Load cart gracefully even if database is offline or slow
         try {
           let dbCart: CartItem[] = [];
@@ -173,21 +184,40 @@ export default function App() {
           
           if (dbCart && dbCart.length > 0) {
             setCart(dbCart);
-            localStorage.setItem("cactus_bear_cart", JSON.stringify(dbCart));
+            localStorage.setItem(userCartKey, JSON.stringify(dbCart));
           } else {
-            const savedCart = localStorage.getItem("cactus_bear_cart");
+            let savedCart = localStorage.getItem(userCartKey);
+            // If the user's scoped cart is completely empty/missing, check if there's a guest cart to adopt
+            if (!savedCart) {
+              const guestCart = localStorage.getItem("cactus_bear_cart_guest") || localStorage.getItem("cactus_bear_cart");
+              if (guestCart) {
+                savedCart = guestCart;
+                // Clear original legacy guest keys so they are not leaked
+                localStorage.removeItem("cactus_bear_cart_guest");
+                localStorage.removeItem("cactus_bear_cart");
+              }
+            }
+
             if (savedCart) {
               try {
                 const parsed = JSON.parse(savedCart);
                 if (parsed.length > 0) {
                   setCart(parsed);
+                  localStorage.setItem(userCartKey, JSON.stringify(parsed));
                   await dbService.saveUserCart(session.uid, parsed).catch(e => console.warn("Failed to sync cart", e));
+                } else {
+                  setCart([]);
                 }
-              } catch {}
+              } catch {
+                setCart([]);
+              }
+            } else {
+              setCart([]);
             }
           }
         } catch (err) {
           console.error("Cart loading exception:", err);
+          setCart([]);
         }
 
         // Load wishlist gracefully even if database is offline or slow
@@ -201,31 +231,53 @@ export default function App() {
 
           if (dbWishlist && dbWishlist.length > 0) {
             setWishlist(dbWishlist);
-            localStorage.setItem("cactus_bear_wishlist", JSON.stringify(dbWishlist));
+            localStorage.setItem(userWishlistKey, JSON.stringify(dbWishlist));
           } else {
-            const savedWishlist = localStorage.getItem("cactus_bear_wishlist");
+            let savedWishlist = localStorage.getItem(userWishlistKey);
+            if (!savedWishlist) {
+              const guestWishlist = localStorage.getItem("cactus_bear_wishlist_guest") || localStorage.getItem("cactus_bear_wishlist");
+              if (guestWishlist) {
+                savedWishlist = guestWishlist;
+                localStorage.removeItem("cactus_bear_wishlist_guest");
+                localStorage.removeItem("cactus_bear_wishlist");
+              }
+            }
+
             if (savedWishlist) {
               try {
                 const parsed = JSON.parse(savedWishlist);
                 if (parsed.length > 0) {
                   setWishlist(parsed);
+                  localStorage.setItem(userWishlistKey, JSON.stringify(parsed));
                   await dbService.saveUserWishlist(session.uid, parsed).catch(e => console.warn("Failed to sync wishlist", e));
+                } else {
+                  setWishlist([]);
                 }
-              } catch {}
+              } catch {
+                setWishlist([]);
+              }
+            } else {
+              setWishlist([]);
             }
           }
         } catch (err) {
           console.error("Wishlist loading exception:", err);
+          setWishlist([]);
         }
       } else {
         // Guest mode fallback load values
-        const savedCart = localStorage.getItem("cactus_bear_cart");
+        const savedCart = localStorage.getItem("cactus_bear_cart_guest") || localStorage.getItem("cactus_bear_cart");
         if (savedCart) {
-          try { setCart(JSON.parse(savedCart)); } catch {}
+          try { setCart(JSON.parse(savedCart)); } catch { setCart([]); }
+        } else {
+          setCart([]);
         }
-        const savedWishlist = localStorage.getItem("cactus_bear_wishlist");
+
+        const savedWishlist = localStorage.getItem("cactus_bear_wishlist_guest") || localStorage.getItem("cactus_bear_wishlist");
         if (savedWishlist) {
-          try { setWishlist(JSON.parse(savedWishlist)); } catch {}
+          try { setWishlist(JSON.parse(savedWishlist)); } catch { setWishlist([]); }
+        } else {
+          setWishlist([]);
         }
       }
     });
@@ -251,7 +303,7 @@ export default function App() {
   // Sync state helpers
   const syncCart = (updated: CartItem[]) => {
     setCart(updated);
-    localStorage.setItem("cactus_bear_cart", JSON.stringify(updated));
+    localStorage.setItem(getCartStorageKey(currentUser?.uid || null), JSON.stringify(updated));
     if (currentUser) {
       dbService.saveUserCart(currentUser.uid, updated).catch((err) =>
         console.error("Cart sync failed", err)

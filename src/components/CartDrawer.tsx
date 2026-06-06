@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, Trash2, ShieldCheck, Truck, ShoppingCart, KeyRound, MapPin, Smartphone, Mail, Heart, CreditCard } from "lucide-react";
 import { CartItem, Product } from "../types";
 import GlowCrown from "./GlowCrown";
+import ProductThumbnail from "./ProductThumbnail";
 import { dbService } from "../services/firebase";
 import { NIGERIAN_STATES_AND_AREAS } from "../data/nigerianStates";
 
@@ -401,13 +402,10 @@ export default function CartDrawer({
                         >
                           {/* Swatch indicator preview */}
                           <div className="w-16 h-16 bg-zinc-950 border border-zinc-900 flex items-center justify-center relative flex-shrink-0">
-                            <div className="rotate-[12deg] w-10 h-10 select-none">
-                              <GlowCrown
-                                size="100%"
-                                color={product.colors?.[0]?.isYellowTint ? "#000000" : "#EFFF00"}
-                                glow={false}
-                              />
-                            </div>
+                            <ProductThumbnail
+                              product={product}
+                              selectedColor={product.colors?.[0]}
+                            />
                           </div>
 
                           {/* Detail summary */}
@@ -499,13 +497,10 @@ export default function CartDrawer({
                                 <div className="absolute top-1 left-1 w-1 h-1 rounded-full bg-[#EFFF00] animate-pulse" />
                               )}
                               
-                              <div className="rotate-[12deg] w-10 h-10 select-none">
-                                <GlowCrown
-                                  size="100%"
-                                  color={item.selectedColor.isYellowTint ? "#000000" : "#EFFF00"}
-                                  glow={false}
-                                />
-                              </div>
+                              <ProductThumbnail
+                                product={item.product}
+                                selectedColor={item.selectedColor}
+                              />
                             </div>
 
                             {/* Core description block */}
